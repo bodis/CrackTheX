@@ -39,6 +39,8 @@ function goToState(newState, data = {}) {
 
   const tl = gsap.timeline();
 
+  const stateToCleanup = currentState;
+
   if (oldEl) {
     tl.to(oldEl, {
       opacity: 0,
@@ -47,10 +49,10 @@ function goToState(newState, data = {}) {
       ease: 'power2.in',
       onComplete: () => {
         oldEl.classList.remove('active');
-        // Cleanup old state
-        if (currentState === AppState.SCANNER) Camera.cleanup();
-        if (currentState === AppState.VALIDATOR) Validator.cleanup();
-        if (currentState === AppState.BOARD) InteractiveBoard.cleanup();
+        // Cleanup old state (use captured value — currentState has already changed)
+        if (stateToCleanup === AppState.SCANNER) Camera.cleanup();
+        if (stateToCleanup === AppState.VALIDATOR) Validator.cleanup();
+        if (stateToCleanup === AppState.BOARD) InteractiveBoard.cleanup();
       }
     });
   }
