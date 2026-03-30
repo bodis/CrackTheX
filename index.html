@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>CrackTheX</title>
+
+  <!-- Typography: Space Grotesk + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Cropper.js v1.6.2 CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- STATE 1: SCANNER -->
+    <section id="state-scanner" class="app-state active">
+      <video id="camera-feed" autoplay playsinline></video>
+      <canvas id="capture-canvas" style="display:none;"></canvas>
+      <img id="captured-image" style="display:none;" alt="Captured" />
+      <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none;" />
+      <div id="scanner-controls" class="glass-bar">
+        <button id="btn-capture" class="btn-primary">Fotozas</button>
+      </div>
+    </section>
+
+    <!-- STATE 2: VALIDATOR -->
+    <section id="state-validator" class="app-state">
+      <div class="validator-content">
+        <div class="glass-card" id="card-original">
+          <h3 class="card-label">Eredeti</h3>
+          <img id="cropped-preview" alt="Cropped equation" />
+        </div>
+        <div class="glass-card" id="card-recognized">
+          <h3 class="card-label">Felismert keplet</h3>
+          <div id="latex-render"></div>
+          <input type="text" id="latex-input" class="glass-input" placeholder="LaTeX keplet..." />
+          <div id="ocr-warning" class="warning-banner" style="display:none;">
+            Alacsony felismeresi biztonsag - ellenorizd a kepletet!
+          </div>
+        </div>
+        <div id="validator-loading" class="loading-spinner" style="display:none;">
+          <div class="spinner"></div>
+          <span>Felismeres...</span>
+        </div>
+        <button id="btn-solve" class="btn-primary btn-accent">Megoldas!</button>
+      </div>
+    </section>
+
+    <!-- STATE 3: INTERACTIVE BOARD -->
+    <section id="state-board" class="app-state">
+      <div id="board-content">
+        <div id="steps-container"></div>
+        <div id="interactive-zone" class="glass-card interactive-card"></div>
+      </div>
+      <button id="btn-new" class="fab">Uj feladat</button>
+    </section>
+
+  </div>
+
+  <!-- JS Libraries (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Solve.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+
+  <!-- Local JS (load order matters) -->
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/solver.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/interactive-board.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
