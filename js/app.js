@@ -21,7 +21,8 @@ const STRINGS = {
   errorParsing: 'Nem sikerult ertelmezni az egyenletet. Probald egyszerubb formaban!',
   cameraError: 'Kamera nem elerheto. Hasznald a fajlfeltoltest!',
   apiError: 'Hiba a kepletfelismeresnel. Probald ujra vagy ird be kezzel!',
-  offline: 'Nincs internetkapcsolat. A felismeres nem elerheto.'
+  offline: 'Nincs internetkapcsolat. A felismeres nem elerheto.',
+  dragHint: 'Huzd at a tagokat az egyenlojegjel masik oldalara!'
 };
 
 // ========== STATE MACHINE ==========
