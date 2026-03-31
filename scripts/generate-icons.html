@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrackTheX Icon Generator</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #080b1a;
+      color: #f4f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      gap: 2rem;
+    }
+    h1 { font-size: 1.5rem; }
+    p { color: #9898c0; font-size: 0.9rem; }
+    .icons { display: flex; gap: 2rem; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
+    canvas { border-radius: 12px; }
+    a {
+      display: block;
+      margin-top: 0.75rem;
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #7c3aed, #22d3ee);
+      color: white;
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .icon-group { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .icon-label { font-size: 0.75rem; color: #9898c0; }
+  </style>
+</head>
+<body>
+  <h1>CrackTheX PWA Icon Generator</h1>
+  <p>Click a download link to save the icon, then place it in <code>assets/icons/</code>.</p>
+  <div class="icons" id="icons"></div>
+
+  <script>
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawIcon(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const s = size;
+
+      // Background: rounded dark gradient
+      const bg = ctx.createLinearGradient(0, 0, s, s);
+      bg.addColorStop(0, '#141840');
+      bg.addColorStop(1, '#080b1a');
+      roundRect(ctx, 0, 0, s, s, s * 0.18);
+      ctx.fillStyle = bg;
+      ctx.fill();
+
+      // Subtle aurora glow behind X
+      const glow1 = ctx.createRadialGradient(s * 0.3, s * 0.3, 0, s * 0.3, s * 0.3, s * 0.45);
+      glow1.addColorStop(0, 'rgba(124, 58, 237, 0.18)');
+      glow1.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow1;
+      roundRect(ctx, 0, 0, s, s, s * 0.18);
+      ctx.fill();
+
+      const glow2 = ctx.createRadialGradient(s * 0.7, s * 0.7, 0, s * 0.7, s * 0.7, s * 0.4);
+      glow2.addColorStop(0, 'rgba(34, 211, 238, 0.12)');
+      glow2.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow2;
+      roundRect(ctx, 0, 0, s, s, s * 0.18);
+      ctx.fill();
+
+      // X stroke gradient: violet -> purple -> cyan
+      const grad = ctx.createLinearGradient(s * 0.15, s * 0.15, s * 0.85, s * 0.85);
+      grad.addColorStop(0, '#7c3aed');
+      grad.addColorStop(0.45, '#a855f7');
+      grad.addColorStop(1, '#22d3ee');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = s * 0.13;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // First diagonal: top-left to bottom-right
+      ctx.beginPath();
+      ctx.moveTo(s * 0.2, s * 0.2);
+      ctx.lineTo(s * 0.8, s * 0.8);
+      ctx.stroke();
+
+      // Second diagonal: top-right to bottom-left (reversed gradient for symmetry)
+      const grad2 = ctx.createLinearGradient(s * 0.85, s * 0.15, s * 0.15, s * 0.85);
+      grad2.addColorStop(0, '#22d3ee');
+      grad2.addColorStop(0.55, '#a855f7');
+      grad2.addColorStop(1, '#7c3aed');
+      ctx.strokeStyle = grad2;
+
+      ctx.beginPath();
+      ctx.moveTo(s * 0.8, s * 0.2);
+      ctx.lineTo(s * 0.2, s * 0.8);
+      ctx.stroke();
+
+      return canvas;
+    }
+
+    const sizes = [192, 512];
+    const container = document.getElementById('icons');
+
+    sizes.forEach(size => {
+      const canvas = drawIcon(size);
+      const displaySize = Math.min(size, 256);
+      canvas.style.width = displaySize + 'px';
+      canvas.style.height = displaySize + 'px';
+
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `icon-${size}.png`;
+      link.textContent = `Download icon-${size}.png`;
+
+      const label = document.createElement('div');
+      label.className = 'icon-label';
+      label.textContent = `${size}×${size}`;
+
+      const group = document.createElement('div');
+      group.className = 'icon-group';
+      group.appendChild(canvas);
+      group.appendChild(label);
+      group.appendChild(link);
+
+      container.appendChild(group);
+    });
+  </script>
+</body>
+</html>

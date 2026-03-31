@@ -1,3 +1,18 @@
+// ========== RIPPLE EFFECT ==========
+function rippleEffect(btn, e) {
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.left = (e.clientX - rect.left) + 'px';
+  ripple.style.top  = (e.clientY - rect.top)  + 'px';
+  btn.appendChild(ripple);
+  gsap.fromTo(ripple,
+    { xPercent: -50, yPercent: -50, scale: 0, opacity: 0.5 },
+    { xPercent: -50, yPercent: -50, scale: 2.5, opacity: 0, duration: 0.5, ease: 'power2.out',
+      onComplete: () => ripple.remove() }
+  );
+}
+
 // ========== HUNGARIAN UI STRINGS ==========
 const STRINGS = {
   takePhoto: 'Fotozas',
@@ -85,10 +100,27 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
 
+  // Ripple: event delegation on #app catches all buttons including dynamic ones
+  document.getElementById('app').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-primary, .btn-accent, .fab');
+    if (btn) rippleEffect(btn, e);
+  });
+
   // Wire global buttons
   document.getElementById('btn-new').addEventListener('click', () => {
     goToState(AppState.SCANNER);
   });
+
+  // Logo letter stagger (runs once on first load)
+  const logoEl = document.getElementById('app-logo');
+  if (logoEl) {
+    const chars = logoEl.textContent.split('');
+    logoEl.innerHTML = chars.map(c => `<span class="logo-char">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
+    gsap.from('.logo-char', {
+      y: -20, opacity: 0, duration: 0.4,
+      stagger: 0.04, ease: 'back.out(2)', delay: 0.3
+    });
+  }
 
   // Start
   goToState(AppState.SCANNER);

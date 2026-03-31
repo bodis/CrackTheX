@@ -110,10 +110,13 @@ const Camera = {
     canvas.width = 0;
     canvas.height = 0;
 
-    // Flash effect
-    gsap.fromTo('#state-scanner',
-      { backgroundColor: 'rgba(255,255,255,0.3)' },
-      { backgroundColor: 'transparent', duration: 0.3 }
+    // Flash effect — full-screen white overlay
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;inset:0;background:white;pointer-events:none;z-index:9999;';
+    document.body.appendChild(flash);
+    gsap.fromTo(flash,
+      { opacity: 0.85 },
+      { opacity: 0, duration: 0.4, ease: 'power2.out', onComplete: () => flash.remove() }
     );
 
     // Stop camera stream

@@ -54,6 +54,7 @@ const Validator = {
 
     // Show spinner, hide solve button
     loading.style.display = 'flex';
+    gsap.from('#validator-loading', { opacity: 0, y: -8, duration: 0.25 });
     btnSolve.style.display = 'none';
 
     // Offline check
@@ -75,6 +76,7 @@ const Validator = {
 
       document.getElementById('latex-input').value = latex;
       this.renderLatex(latex);
+      gsap.from('#card-recognized', { opacity: 0.4, scale: 0.97, duration: 0.3, ease: 'power2.out' });
 
       // Show warning for low confidence
       if (confidence > 0 && confidence < 0.8) {

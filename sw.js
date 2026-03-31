@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crackthex-v1';
+const CACHE_NAME = 'crackthex-v2';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -10,6 +10,8 @@ const SHELL_ASSETS = [
   '/js/interactive-board.js',
   '/js/utils.js',
   '/js/api.js',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
   // CDN assets
   'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js',

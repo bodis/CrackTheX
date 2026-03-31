@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/bodist/work/github/CrackTheX log --oneline -10)",
+      "WebFetch(domain:cdnjs.com)",
+      "WebFetch(domain:docs.mathpix.com)",
+      "WebFetch(domain:nerdamer.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.jsdelivr.com)",
+      "WebFetch(domain:interactjs.io)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:fengyuanchen.github.io)",
+      "Bash(python3:*)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/index.html)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(grep -E \"\\\\.\\(js|html|json|md\\)$\")",
+      "Bash(node:*)",
+      "Bash(pkill -f \"python3 -m http.server 8079\")"
+    ]
+  }
+}

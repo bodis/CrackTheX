@@ -275,9 +275,22 @@ body::after {
 
 .step-card {
   position: relative;
-  border-left: 3px solid transparent;
-  border-image: var(--gradient-main) 1;
   padding-left: 1.25rem;
+}
+
+.step-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gradient-main);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.step-card--final::before {
+  background: var(--success);
 }
 
 .step-card .step-equation {
@@ -310,6 +323,8 @@ body::after {
 
 /* ========== BUTTONS ========== */
 .btn-primary {
+  position: relative;
+  overflow: hidden;
   padding: 0.875rem 2.5rem;
   border: 1px solid var(--glass-border);
   border-radius: 999px;
@@ -348,6 +363,7 @@ body::after {
 
 .fab {
   position: fixed;
+  overflow: hidden;
   bottom: 1.5rem;
   right: 1.5rem;
   width: auto;
@@ -467,6 +483,43 @@ body::after {
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
   color: var(--warning);
+}
+
+/* ========== APP LOGO ========== */
+#app-logo {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5rem;
+  font-weight: 700;
+  z-index: 10;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ========== RIPPLE EFFECT ========== */
+.ripple {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+/* ========== STEP BADGE ========== */
+.step-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent-cyan);
+  letter-spacing: 0.1em;
+  opacity: 0.8;
 }
 
 /* ========== RESPONSIVE ========== */

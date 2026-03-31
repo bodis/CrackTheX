@@ -38,6 +38,7 @@ const InteractiveBoard = {
       stagger: 0.15,
       ease: 'power2.out'
     });
+    gsap.delayedCall(0.3, () => this.animateStepBadges());
 
     // Find last non-final step with lhs/rhs for interactive zone
     let interactiveStep = null;
@@ -70,6 +71,12 @@ const InteractiveBoard = {
     rule.textContent = step.rule;
     card.appendChild(rule);
 
+    const badge = document.createElement('span');
+    badge.className = 'step-badge';
+    badge.textContent = '00';
+    badge.dataset.target = index + 1;
+    card.appendChild(badge);
+
     const eqDiv = document.createElement('div');
     eqDiv.className = 'step-equation';
     try {
@@ -84,8 +91,7 @@ const InteractiveBoard = {
     card.appendChild(eqDiv);
 
     if (step.isFinal) {
-      card.style.borderImage = 'none';
-      card.style.borderLeft = '3px solid var(--success)';
+      card.classList.add('step-card--final');
       card.style.boxShadow = '0 4px 20px var(--success-glow)';
     }
 
@@ -219,6 +225,14 @@ const InteractiveBoard = {
         const dropSide = event.target.dataset.side;
         if (dragSide !== dropSide) {
           event.target.classList.add('drop-active');
+          gsap.to('.equals-sign', {
+            scale: 1.3,
+            textShadow: '0 0 20px #22d3ee',
+            duration: 0.2,
+            yoyo: true,
+            repeat: 1,
+            overwrite: true
+          });
         }
       },
       ondragleave(event) {
@@ -264,19 +278,22 @@ const InteractiveBoard = {
       ? equalsRect.right - naturalLeft + 60
       : equalsRect.left - naturalLeft - termRect.width - 60;
 
-    const flashColor = flippedSign === '-' ? 'var(--danger)' : 'var(--success)';
+    // Cyan for new positive sign, pink for new negative sign
+    const flashColor = flippedSign === '+' ? '#22d3ee' : '#f472b6';
 
     const tl = gsap.timeline();
     tl.to(termElement, { x: flyX, duration: 0.5, ease: 'power2.inOut' });
     tl.to(termElement, {
-      scale: 1.3,
+      scale: 1.4,
       duration: 0.15,
+      ease: 'power2.out',
       onStart() {
         termElement.style.borderColor = flashColor;
-        termElement.style.boxShadow = '0 4px 20px ' + flashColor;
+        termElement.style.boxShadow = '0 4px 25px ' + flashColor;
+        termElement.style.color = flashColor;
       }
     });
-    tl.to(termElement, { scale: 1, duration: 0.15 });
+    tl.to(termElement, { scale: 1, duration: 0.3, ease: 'back.out(2.5)' });
     tl.call(() => this._rebuildAfterMove(termValue, flippedSign));
   },
 
@@ -323,6 +340,7 @@ const InteractiveBoard = {
         duration: 0.5,
         ease: 'back.out(1.7)'
       });
+      gsap.delayedCall(0.2, () => this.animateStepBadges());
 
       if (!isFinal) {
         this.setupInteractiveZone(newStep);
@@ -347,6 +365,22 @@ const InteractiveBoard = {
     } finally {
       this._animating = false;
     }
+  },
+
+  animateStepBadges() {
+    document.querySelectorAll('.step-badge[data-target]').forEach(b => {
+      if (b.dataset.animated) return;
+      b.dataset.animated = 'true';
+      const target = parseInt(b.dataset.target);
+      const counter = { val: 0 };
+      gsap.to(counter, {
+        val: target,
+        duration: 0.35,
+        ease: 'power2.out',
+        delay: 0.1,
+        onUpdate() { b.textContent = String(Math.round(counter.val)).padStart(2, '0'); }
+      });
+    });
   },
 
   _unsetInteract() {
