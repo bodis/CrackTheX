@@ -13,44 +13,74 @@ function rippleEffect(btn, e) {
   );
 }
 
-// ========== HUNGARIAN UI STRINGS ==========
+// ========== UI STRINGS (populated by I18n) ==========
 const STRINGS = {
-  takePhoto: 'Fotozas',
-  selectionDone: 'Kijeloles Kesz',
-  solve: 'Megoldas!',
-  newProblem: 'Uj feladat',
-  recognizing: 'Felismeres...',
+  takePhoto: 'Fotózás',
+  selectionDone: 'Kijelölés kész',
+  solve: 'Megoldás!',
+  newProblem: 'Új feladat',
+  recognizing: 'Felismerés...',
   original: 'Eredeti',
-  recognized: 'Felismert keplet',
-  lowConfidence: 'Alacsony felismeresi biztonsag - ellenorizd a kepletet!',
-  startingEquation: 'Kiindulo egyenlet',
-  expandParens: 'Zarojelek felbontasa',
-  subtractBothSides: 'Kivonas mindket oldalbol',
-  addBothSides: 'Hozzaadas mindket oldalhoz',
-  simplify: 'Egyszerusites',
-  divideBothSides: 'Osztas mindket oldalon',
-  multiplyBothSides: 'Szorzas mindket oldalon',
-  solution: 'Megoldas',
-  directSolution: 'Kozvetlen megoldas',
-  noSolution: 'Nincs megoldas',
-  errorParsing: 'Nem sikerult ertelmezni az egyenletet. Probald egyszerubb formaban!',
-  cameraError: 'Kamera nem elerheto. Hasznald a fajlfeltoltest!',
-  apiError: 'Hiba a kepletfelismeresnel. Probald ujra vagy ird be kezzel!',
-  offline: 'Nincs internetkapcsolat. A felismeres nem elerheto.',
-  dragHint: 'Huzd at a tagokat az egyenlojegjel masik oldalara!',
+  recognized: 'Felismert képlet',
+  lowConfidence: 'Alacsony felismerési biztonság - ellenőrizd a képletet!',
+  startingEquation: 'Kiinduló egyenlet',
+  expandParens: 'Zárójelek felbontása',
+  subtractBothSides: 'Kivonás mindkét oldalból',
+  addBothSides: 'Hozzáadás mindkét oldalhoz',
+  simplify: 'Egyszerűsítés',
+  divideBothSides: 'Osztás mindkét oldalon',
+  multiplyBothSides: 'Szorzás mindkét oldalon',
+  solution: 'Megoldás',
+  directSolution: 'Közvetlen megoldás',
+  noSolution: 'Nincs megoldás',
+  errorParsing: 'Nem sikerült értelmezni az egyenletet. Próbáld egyszerűbb formában!',
+  cameraError: 'Kamera nem elérhető. Használd a fájlfeltöltést!',
+  apiError: 'Hiba a képletfelismerésnél. Próbáld újra vagy írd be kézzel!',
+  offline: 'Nincs internetkapcsolat. A felismerés nem elérhető.',
+  dragHint: 'Húzd át a tagokat az egyenlőjel másik oldalára!',
   equation: 'Egyenlet',
   inputPlaceholder: 'pl. 2x + 3 = 7',
   back: 'Vissza',
-  homeTagline: 'Oldd meg az egyenletet lepesrol lepesre!',
-  expandInner: 'Belso zarojel felbontasa',
-  expandOuter: 'Zarojel felbontasa',
-  simplifyTerms: 'Osszevonas',
-  divideFirstHint: 'Mindket oldal oszthato',
-  alternativePath: 'Mas ut',
-  altExpandDesc: 'A zarojelek felbontasaval is megoldhato',
-  altDivideDesc: 'Eloszor osztas mindket oldalon',
-  nextStep: 'Kovetkezo lepes',
-  showAll: 'Teljes megoldas'
+  homeTagline: 'Oldd meg az egyenletet lépésről lépésre!',
+  expandInner: 'Belső zárójel felbontása',
+  expandOuter: 'Zárójel felbontása',
+  simplifyTerms: 'Összevonás',
+  divideFirstHint: 'Mindkét oldal osztható',
+  alternativePath: 'Más út',
+  altExpandDesc: 'A zárójelek felbontásával is megoldható',
+  altDivideDesc: 'Először osztás mindkét oldalon',
+  nextStep: 'Következő lépés',
+  showAll: 'Teljes megoldás',
+  freeRewrite: 'Átírás',
+  rewritePlaceholder: 'pl. 5x - 3 = 12',
+  apply: 'Alkalmaz',
+  rewriteNeedsEquals: 'Az egyenletnek tartalmaznia kell egy = jelet',
+  rewriteInvalid: 'Nem sikerült értelmezni az egyenletet',
+  rewriteSolutionMismatch: 'Az átírt egyenlet megoldása nem egyezik az eredetivel!',
+  nothingToExpand: 'Nincs mit felbontani',
+  nothingToSimplify: 'Nincs mit egyszerűsíteni',
+  divisionByZero: 'Nullával nem lehet osztani',
+  actionError: 'A művelet nem sikerült',
+  // Session & i18n keys
+  equations: 'Egyenletek',
+  deleted: 'Törölve.',
+  undo: 'Visszavonás',
+  delete_: 'Törlés',
+  statusNew: 'Új',
+  statusInProgress: 'Folyamatban',
+  statusSolved: 'Megoldva',
+  timeJustNow: 'most',
+  timeMinutes: 'p.',
+  timeHours: 'ó.',
+  timeDays: 'nap',
+  typeEntry: 'Begépelés',
+  typeEntrySubtitle: 'Írd be az egyenletet',
+  photoEntry: 'Fotózás',
+  photoEntrySubtitle: 'Fotózd le az egyenletet',
+  selectImage: 'Kép kiválasztása',
+  imageNotAvailable: 'Kép nem elérhető',
+  originalImageNA: 'Eredeti (kép nem elérhető)',
+  latexPlaceholder: 'LaTeX képlet...'
 };
 
 // ========== STATE MACHINE ==========
@@ -114,6 +144,9 @@ function goToState(newState, data = {}) {
 
 // ========== INIT ==========
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize i18n (must be first — populates STRINGS)
+  I18n.init();
+
   // Register service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
@@ -129,6 +162,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-new').addEventListener('click', () => {
     const session = SessionManager.createSession();
     SessionManager.activateSession(session.id);
+  });
+
+  // Wire language selector
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      I18n.setLanguage(btn.dataset.lang);
+      SessionManager.renderSessionList();
+      SessionManager.updateTopbarEquation();
+    });
   });
 
   // Initialize SessionManager (replaces direct goToState call)

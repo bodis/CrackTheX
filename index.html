@@ -30,8 +30,8 @@
         <path d="M3 12h18M3 6h18M3 18h18"/>
       </svg>
     </button>
-    <span id="topbar-equation" class="topbar-equation">Uj feladat</span>
-    <button id="btn-new-session" class="btn-icon" aria-label="Uj feladat">
+    <span id="topbar-equation" class="topbar-equation" data-i18n="newProblem">Új feladat</span>
+    <button id="btn-new-session" class="btn-icon" data-i18n-aria="newProblem" aria-label="Új feladat">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 5v14M5 12h14"/>
       </svg>
@@ -41,8 +41,8 @@
   <!-- Sidebar -->
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
-      <h2 class="sidebar-title">Egyenletek</h2>
-      <button id="btn-new-sidebar" class="btn-icon" aria-label="Uj egyenlet">
+      <h2 class="sidebar-title" data-i18n="equations">Egyenletek</h2>
+      <button id="btn-new-sidebar" class="btn-icon" data-i18n-aria="newProblem" aria-label="Új egyenlet">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 5v14M5 12h14"/>
         </svg>
@@ -50,6 +50,13 @@
     </div>
     <div id="session-list" class="session-list">
       <!-- Session cards rendered dynamically by sessions.js -->
+    </div>
+    <div class="sidebar-footer">
+      <div class="lang-selector">
+        <button class="lang-btn active" data-lang="hu">HU</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="de">DE</button>
+      </div>
     </div>
   </aside>
 
@@ -65,15 +72,15 @@
       <!-- Home screen (default view) -->
       <div id="home-content" class="home-content">
         <div id="app-logo" class="gradient-text">CrackTheX</div>
-        <p class="home-tagline">Oldd meg az egyenletet lepesrol lepesre!</p>
+        <p class="home-tagline" data-i18n="homeTagline">Oldd meg az egyenletet lépésről lépésre!</p>
         <div class="entry-options">
           <button class="glass-card entry-card entry-card--primary" id="entry-keyboard">
             <svg class="entry-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
             </svg>
             <div>
-              <span class="entry-label">Begepeles</span>
-              <span class="entry-subtitle">Ird be az egyenletet</span>
+              <span class="entry-label" data-i18n="typeEntry">Begépelés</span>
+              <span class="entry-subtitle" data-i18n="typeEntrySubtitle">Írd be az egyenletet</span>
             </div>
           </button>
           <button class="glass-card entry-card" id="entry-camera">
@@ -82,15 +89,15 @@
               <circle cx="12" cy="13" r="4"/>
             </svg>
             <div>
-              <span class="entry-label">Fotozas</span>
-              <span class="entry-subtitle">Fotozd le az egyenletet</span>
+              <span class="entry-label" data-i18n="photoEntry">Fotózás</span>
+              <span class="entry-subtitle" data-i18n="photoEntrySubtitle">Fotózd le az egyenletet</span>
             </div>
           </button>
         </div>
       </div>
-      <!-- Camera sub-view (hidden until "Fotozas" tapped) -->
+      <!-- Camera sub-view -->
       <div id="camera-view" style="display:none;">
-        <button id="btn-camera-back" class="btn-back-nav" aria-label="Vissza">
+        <button id="btn-camera-back" class="btn-back-nav" data-i18n-aria="back" aria-label="Vissza">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
           </svg>
@@ -100,36 +107,36 @@
         <img id="captured-image" style="display:none;" alt="Captured" />
         <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none;" />
         <div id="scanner-controls" class="glass-bar">
-          <button id="btn-capture" class="btn-primary">Fotozas</button>
+          <button id="btn-capture" class="btn-primary" data-i18n="takePhoto">Fotózás</button>
         </div>
       </div>
     </section>
 
     <!-- STATE 2: VALIDATOR -->
     <section id="state-validator" class="app-state">
-      <button id="btn-validator-back" class="btn-back-nav" aria-label="Vissza">
+      <button id="btn-validator-back" class="btn-back-nav" data-i18n-aria="back" aria-label="Vissza">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
         </svg>
       </button>
       <div class="validator-content">
         <div class="glass-card" id="card-original">
-          <h3 class="card-label">Eredeti</h3>
+          <h3 class="card-label" id="label-original" data-i18n="original">Eredeti</h3>
           <img id="cropped-preview" alt="Cropped equation" />
         </div>
         <div class="glass-card" id="card-recognized">
-          <h3 class="card-label">Felismert keplet</h3>
+          <h3 class="card-label" id="label-recognized" data-i18n="recognized">Felismert képlet</h3>
           <div id="latex-render"></div>
-          <input type="text" id="latex-input" class="glass-input" placeholder="LaTeX keplet..." />
-          <div id="ocr-warning" class="warning-banner" style="display:none;">
-            Alacsony felismeresi biztonsag - ellenorizd a kepletet!
+          <input type="text" id="latex-input" class="glass-input" data-i18n-placeholder="latexPlaceholder" placeholder="LaTeX képlet..." />
+          <div id="ocr-warning" class="warning-banner" data-i18n="lowConfidence" style="display:none;">
+            Alacsony felismerési biztonság - ellenőrizd a képletet!
           </div>
         </div>
         <div id="validator-loading" class="loading-spinner" style="display:none;">
           <div class="spinner"></div>
-          <span>Felismeres...</span>
+          <span data-i18n="recognizing">Felismerés...</span>
         </div>
-        <button id="btn-solve" class="btn-primary btn-accent">Megoldas!</button>
+        <button id="btn-solve" class="btn-primary btn-accent" data-i18n="solve">Megoldás!</button>
       </div>
     </section>
 
@@ -139,7 +146,7 @@
         <div id="steps-container"></div>
         <div id="interactive-zone" class="glass-card interactive-card"></div>
       </div>
-      <button id="btn-new" class="fab">Uj feladat</button>
+      <button id="btn-new" class="fab" data-i18n="newProblem">Új feladat</button>
     </section>
 
   </div>
@@ -147,8 +154,8 @@
 
   <!-- Undo toast -->
   <div id="undo-toast" class="undo-toast" style="display:none;">
-    <span>Torolve.</span>
-    <button id="btn-undo" class="btn-undo">Visszavonas</button>
+    <span data-i18n="deleted">Törölve.</span>
+    <button id="btn-undo" class="btn-undo" data-i18n="undo">Visszavonás</button>
   </div>
 
   <!-- JS Libraries (CDN) -->
@@ -158,10 +165,10 @@
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Solve.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
 
   <!-- Local JS (load order matters) -->
+  <script src="js/i18n.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/api.js"></script>
   <script src="js/solver.js"></script>

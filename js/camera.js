@@ -197,7 +197,7 @@ const Camera = {
     const fileInput = document.getElementById('file-input');
 
     video.style.display = 'none';
-    btn.textContent = 'Kep kivalasztasa';
+    btn.textContent = STRINGS.selectImage || 'Kép kiválasztása';
     btn.disabled = false;
 
     // Remove capture attribute so iOS shows file picker, not camera

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crackthex-v5';
+const CACHE_NAME = 'crackthex-v6';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const SHELL_ASSETS = [
   './js/solver.js',
   './js/interactive-board.js',
   './js/sessions.js',
+  './js/i18n.js',
   './js/utils.js',
   './js/api.js',
   './assets/icons/icon-192.png',
@@ -22,7 +23,6 @@ const SHELL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.js',
   'https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.js',
   'https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Solve.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js'
 ];
 

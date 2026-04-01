@@ -402,6 +402,10 @@ body::after {
   gap: 1rem;
 }
 
+#steps-container {
+  margin-bottom: 1rem;
+}
+
 .step-card {
   position: relative;
   padding-left: 1.25rem;
@@ -443,11 +447,32 @@ body::after {
   border-radius: 999px;
 }
 
+.step-connector-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
 .step-connector {
   width: 2px;
-  height: 20px;
+  height: 12px;
   background: var(--glass-border);
   margin: 0 auto;
+}
+
+.step-rule-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-light);
+  background: var(--accent-glow);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---- ALTERNATIVE PATH BADGE & PANEL ---- */
@@ -509,7 +534,7 @@ body::after {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
   overflow: hidden;
 }
 
@@ -603,71 +628,119 @@ body::after {
   box-shadow: 0 8px 32px var(--accent-glow-strong);
 }
 
-/* ========== INTERACTIVE ZONE (Drag-and-Drop) ========== */
+/* ========== INTERACTIVE ZONE (Action-Based) ========== */
 .interactive-card {
   padding: 1.5rem;
 }
 
-.equation-row {
+.action-equation-display {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  min-height: 50px;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.equation-side {
+.action-buttons-row {
   display: flex;
+  gap: 0.5rem;
+  justify-content: center;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-height: 60px;
-  min-width: 80px;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  border: 2px dashed transparent;
-  transition: all 0.2s;
+  margin-bottom: 1rem;
 }
 
-.equation-side.drop-active {
+.action-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  min-width: 44px;
+}
+
+.action-btn:hover {
+  border-color: var(--accent-mid);
+  box-shadow: 0 2px 12px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.action-btn.active {
   background: var(--accent-glow);
   border-color: var(--accent);
 }
 
-.draggable-term {
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  border: 1px solid var(--glass-border);
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  will-change: transform;
-  font-size: 1.2rem;
+.action-btn--auto {
+  font-size: 0.8rem;
+  padding: 0.6rem 0.75rem;
 }
 
-.draggable-term:hover {
-  border-color: var(--accent-mid);
-  box-shadow: 0 2px 12px var(--accent-glow);
-}
-
-.draggable-term:active,
-.draggable-term.dragging {
-  cursor: grabbing;
-  box-shadow: 0 4px 20px var(--accent-glow);
-  border-color: var(--accent);
-  z-index: 100;
-}
-
-.equals-sign {
-  font-size: 2rem;
+.action-btn--rewrite {
+  display: block;
+  margin: 0.5rem auto 0;
+  background: none;
+  border: 1px dashed var(--glass-border);
   color: var(--text-secondary);
-  padding: 0 12px;
+  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.action-btn--rewrite:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+}
+
+.action-btn--rewrite.active {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.action-input-area {
   display: flex;
   align-items: center;
-  user-select: none;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.action-input-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.action-value-input {
+  flex: 1;
+  min-width: 80px;
+  max-width: 200px;
+}
+
+.action-value-input--wide {
+  max-width: none;
+}
+
+.action-apply-btn {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.rewrite-error {
+  width: 100%;
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 /* ========== LOADING SPINNER ========== */
@@ -808,6 +881,45 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* ---- SIDEBAR FOOTER / LANGUAGE SELECTOR ---- */
+
+.sidebar-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.lang-selector {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.lang-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+
+.lang-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-mid);
+}
+
+.lang-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent-light);
 }
 
 /* ---- SESSION CARD ---- */

@@ -1,10 +1,9 @@
-// interactive-board.js — Step card rendering + interact.js drag-and-drop
+// interactive-board.js — Step card rendering + action-based equation operations
 
 const InteractiveBoard = {
   currentEquation: null,
   steps: [],
   _fabTween: null,
-  _animating: false,
   _originalLatex: null,
   _solverSteps: [],
   _userSteps: [],
@@ -50,9 +49,7 @@ const InteractiveBoard = {
       // Render all steps
       this.steps.forEach((step, i) => {
         if (i > 0) {
-          const conn = document.createElement('div');
-          conn.className = 'step-connector';
-          stepsContainer.appendChild(conn);
+          stepsContainer.appendChild(this.createStepConnector(step.rule));
         }
         stepsContainer.appendChild(this.createStepCard(step, i));
       });
@@ -126,15 +123,40 @@ const InteractiveBoard = {
     });
   },
 
+  createStepConnector(rule) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-connector-wrapper';
+
+    const line1 = document.createElement('div');
+    line1.className = 'step-connector';
+    wrapper.appendChild(line1);
+
+    if (rule) {
+      const label = document.createElement('span');
+      label.className = 'step-rule-label';
+      label.textContent = rule;
+      wrapper.appendChild(label);
+    }
+
+    const line2 = document.createElement('div');
+    line2.className = 'step-connector';
+    wrapper.appendChild(line2);
+
+    return wrapper;
+  },
+
   createStepCard(step, index) {
     const card = document.createElement('div');
     card.className = 'glass-card step-card';
     card.dataset.step = index;
 
-    const rule = document.createElement('span');
-    rule.className = 'step-rule';
-    rule.textContent = step.rule;
-    card.appendChild(rule);
+    // Only show rule inside card for step 0 (starting equation)
+    if (index === 0 && step.rule) {
+      const rule = document.createElement('span');
+      rule.className = 'step-rule';
+      rule.textContent = step.rule;
+      card.appendChild(rule);
+    }
 
     const badge = document.createElement('span');
     badge.className = 'step-badge';
@@ -214,220 +236,190 @@ const InteractiveBoard = {
   },
 
   setupInteractiveZone(step) {
-    this._unsetInteract();
-
     const zone = document.getElementById('interactive-zone');
     zone.innerHTML = '';
 
-    const lhsTerms = MathUtils.parseTerms(step.lhs);
-    const rhsTerms = MathUtils.parseTerms(step.rhs);
     this.currentEquation = {
       lhs: step.lhs,
-      rhs: step.rhs,
-      lhsTerms,
-      rhsTerms
+      rhs: step.rhs
     };
 
-    const row = document.createElement('div');
-    row.className = 'equation-row';
-
-    const lhsZone = document.createElement('div');
-    lhsZone.className = 'equation-side drop-zone';
-    lhsZone.dataset.side = 'lhs';
-
-    const equalsSign = document.createElement('div');
-    equalsSign.className = 'equals-sign';
-    equalsSign.textContent = '=';
-
-    const rhsZone = document.createElement('div');
-    rhsZone.className = 'equation-side drop-zone';
-    rhsZone.dataset.side = 'rhs';
-
-    lhsTerms.forEach((term, i) => {
-      lhsZone.appendChild(this.createTermElement(term, 'lhs', i));
-    });
-
-    rhsTerms.forEach((term, i) => {
-      rhsZone.appendChild(this.createTermElement(term, 'rhs', i));
-    });
-
-    row.appendChild(lhsZone);
-    row.appendChild(equalsSign);
-    row.appendChild(rhsZone);
-    zone.appendChild(row);
-
-    const hint = document.createElement('p');
-    hint.textContent = STRINGS.dragHint;
-    hint.style.cssText = 'text-align:center;color:var(--text-muted);font-size:0.75rem;margin-top:1rem;';
-    zone.appendChild(hint);
-
-    this.initDragAndDrop();
-  },
-
-  createTermElement(term, side, index) {
-    const el = document.createElement('div');
-    el.className = 'draggable-term';
-    el.dataset.side = side;
-    el.dataset.index = index;
-    el.dataset.sign = term.sign;
-    el.dataset.value = term.raw;
-
-    // Build display: show sign prefix (omit leading + for first term)
-    let displayLatex = term.latex;
-    if (term.sign === '-') {
-      displayLatex = '-' + term.latex;
-    } else if (index > 0) {
-      displayLatex = '+' + term.latex;
-    }
-
+    // 1. Display current equation (read-only KaTeX)
+    const eqDisplay = document.createElement('div');
+    eqDisplay.className = 'action-equation-display';
     try {
-      katex.render(displayLatex, el, { throwOnError: false });
+      const lhsLatex = MathUtils.nerdamerToLatex(nerdamer(step.lhs));
+      const rhsLatex = MathUtils.nerdamerToLatex(nerdamer(step.rhs));
+      katex.render(lhsLatex + ' = ' + rhsLatex, eqDisplay, {
+        throwOnError: false, displayMode: true, output: 'html'
+      });
     } catch {
-      el.textContent = displayLatex;
+      eqDisplay.textContent = step.lhs + ' = ' + step.rhs;
+    }
+    zone.appendChild(eqDisplay);
+
+    // 2. Action buttons row
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'action-buttons-row';
+
+    const actions = [
+      { id: 'add',      label: '+',            needsInput: true },
+      { id: 'subtract', label: '\u2212',       needsInput: true },
+      { id: 'multiply', label: '\u00d7',       needsInput: true },
+      { id: 'divide',   label: '\u00f7',       needsInput: true }
+    ];
+
+    // Conditionally show Expand if equation has parentheses
+    const eqText = step.lhs + '=' + step.rhs;
+    if (eqText.includes('(')) {
+      actions.push({ id: 'expand', label: STRINGS.expandParens, needsInput: false });
+    }
+    actions.push({ id: 'simplify', label: STRINGS.simplifyTerms, needsInput: false });
+
+    actions.forEach(action => {
+      const btn = document.createElement('button');
+      btn.className = 'action-btn' + (action.needsInput ? '' : ' action-btn--auto');
+      btn.dataset.action = action.id;
+      btn.textContent = action.label;
+      btn.addEventListener('click', () => this._handleAction(action));
+      actionsRow.appendChild(btn);
+    });
+    zone.appendChild(actionsRow);
+
+    // 3. Input area (hidden by default)
+    const inputArea = document.createElement('div');
+    inputArea.className = 'action-input-area';
+    inputArea.id = 'action-input-area';
+    inputArea.style.display = 'none';
+    zone.appendChild(inputArea);
+
+    // 4. Free rewrite button
+    const rewriteBtn = document.createElement('button');
+    rewriteBtn.className = 'action-btn action-btn--rewrite';
+    rewriteBtn.textContent = STRINGS.freeRewrite;
+    rewriteBtn.addEventListener('click', () => this._showRewriteInput());
+    zone.appendChild(rewriteBtn);
+  },
+
+  _handleAction(action) {
+    // Highlight active button
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector('.action-btn[data-action="' + action.id + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (!action.needsInput) {
+      this._executeAction(action.id, null);
+      return;
     }
 
-    return el;
-  },
+    const inputArea = document.getElementById('action-input-area');
+    inputArea.style.display = '';
+    inputArea.innerHTML = '';
 
-  initDragAndDrop() {
-    const self = this;
+    const labels = {
+      add: STRINGS.addBothSides,
+      subtract: STRINGS.subtractBothSides,
+      multiply: STRINGS.multiplyBothSides,
+      divide: STRINGS.divideBothSides
+    };
 
-    interact('.draggable-term').draggable({
-      inertia: true,
-      autoScroll: true,
-      listeners: {
-        start(event) {
-          const target = event.target;
-          gsap.to(target, { scale: 1.15, duration: 0.2 });
-          target.classList.add('dragging');
-          target.dataset.x = '0';
-          target.dataset.y = '0';
-        },
-        move(event) {
-          const target = event.target;
-          const x = (parseFloat(target.dataset.x) || 0) + event.dx;
-          const y = (parseFloat(target.dataset.y) || 0) + event.dy;
-          target.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(1.15)';
-          target.dataset.x = x;
-          target.dataset.y = y;
-        },
-        end(event) {
-          const target = event.target;
-          target.classList.remove('dragging');
-          if (!target.classList.contains('dropped')) {
-            gsap.to(target, {
-              x: 0,
-              y: 0,
-              scale: 1,
-              duration: 0.4,
-              ease: 'back.out(1.7)',
-              onComplete() {
-                target.style.transform = '';
-                target.dataset.x = '0';
-                target.dataset.y = '0';
-              }
-            });
-          }
-        }
+    const label = document.createElement('span');
+    label.className = 'action-input-label';
+    label.textContent = labels[action.id] + ':';
+    inputArea.appendChild(label);
+
+    const input = document.createElement('input');
+    input.className = 'glass-input action-value-input';
+    input.type = 'text';
+    input.placeholder = 'pl. 3, 2x, (x+1)';
+    inputArea.appendChild(input);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'btn-primary btn-accent action-apply-btn';
+    applyBtn.textContent = STRINGS.apply;
+    applyBtn.addEventListener('click', () => {
+      const value = input.value.trim();
+      if (value) this._executeAction(action.id, value);
+    });
+    inputArea.appendChild(applyBtn);
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const value = input.value.trim();
+        if (value) this._executeAction(action.id, value);
       }
     });
 
-    interact('.drop-zone').dropzone({
-      accept: '.draggable-term',
-      overlap: 0.3,
-      ondragenter(event) {
-        const dragSide = event.relatedTarget.dataset.side;
-        const dropSide = event.target.dataset.side;
-        if (dragSide !== dropSide) {
-          event.target.classList.add('drop-active');
-          gsap.to('.equals-sign', {
-            scale: 1.3,
-            textShadow: '0 0 20px #22d3ee',
-            duration: 0.2,
-            yoyo: true,
-            repeat: 1,
-            overwrite: true
-          });
-        }
-      },
-      ondragleave(event) {
-        event.target.classList.remove('drop-active');
-      },
-      ondrop(event) {
-        const dragSide = event.relatedTarget.dataset.side;
-        const dropSide = event.target.dataset.side;
-        event.target.classList.remove('drop-active');
-        if (dragSide !== dropSide) {
-          event.relatedTarget.classList.add('dropped');
-          self.handleTermMove(event.relatedTarget, dragSide, dropSide);
-        }
-      }
-    });
+    gsap.from(inputArea, { opacity: 0, y: -10, duration: 0.3, ease: 'power2.out' });
+    requestAnimationFrame(() => input.focus());
   },
 
-  handleTermMove(termElement, fromSide, toSide) {
-    // Bug fix: guard against double-drag during animation
-    if (this._animating) return;
-    this._animating = true;
+  _executeAction(actionId, value) {
+    const eq = this.currentEquation;
+    let newLhs, newRhs, ruleLabel;
 
-    const termValue = termElement.dataset.value;
-    const termSign = termElement.dataset.sign;
-    const flippedSign = termSign === '+' ? '-' : '+';
-
-    // Bug fix: clear manual inline transform and hand off to GSAP cleanly,
-    // then compute flyX from the element's natural (un-transformed) position.
-    // GSAP's x is relative to natural position — mixing inline transform with
-    // gsap.to({ x }) causes GSAP to animate only the delta, not the full distance.
-    const currentX = parseFloat(termElement.dataset.x) || 0;
-    const currentY = parseFloat(termElement.dataset.y) || 0;
-    termElement.style.transform = '';
-    gsap.set(termElement, { x: currentX, y: currentY, scale: 1.15 });
-
-    const equalsEl = document.querySelector('.equals-sign');
-    const equalsRect = equalsEl.getBoundingClientRect();
-    const termRect = termElement.getBoundingClientRect();
-    // naturalLeft = current visual left minus the current GSAP x offset
-    const naturalLeft = termRect.left - currentX;
-
-    const flyX = fromSide === 'lhs'
-      ? equalsRect.right - naturalLeft + 60
-      : equalsRect.left - naturalLeft - termRect.width - 60;
-
-    // Cyan for new positive sign, pink for new negative sign
-    const flashColor = flippedSign === '+' ? '#22d3ee' : '#f472b6';
-
-    const tl = gsap.timeline();
-    tl.to(termElement, { x: flyX, duration: 0.5, ease: 'power2.inOut' });
-    tl.to(termElement, {
-      scale: 1.4,
-      duration: 0.15,
-      ease: 'power2.out',
-      onStart() {
-        termElement.style.borderColor = flashColor;
-        termElement.style.boxShadow = '0 4px 25px ' + flashColor;
-        termElement.style.color = flashColor;
-      }
-    });
-    tl.to(termElement, { scale: 1, duration: 0.3, ease: 'back.out(2.5)' });
-    tl.call(() => this._rebuildAfterMove(termValue, flippedSign));
-  },
-
-  _rebuildAfterMove(termValue, flippedSign) {
-    const opStr = flippedSign + termValue;
+    // Convert Unicode math operators to ASCII for nerdamer
+    if (value) {
+      value = value.replace(/[⋅·]/g, '*').replace(/[−–]/g, '-').replace(/×/g, '*').replace(/÷/g, '/');
+    }
 
     try {
-      const newLhs = nerdamer('expand(' + this.currentEquation.lhs + opStr + ')');
-      const newRhs = nerdamer('expand(' + this.currentEquation.rhs + opStr + ')');
+      switch (actionId) {
+        case 'add':
+          newLhs = nerdamer('expand(' + eq.lhs + '+(' + value + '))');
+          newRhs = nerdamer('expand(' + eq.rhs + '+(' + value + '))');
+          ruleLabel = STRINGS.addBothSides + ': ' + value;
+          break;
+        case 'subtract':
+          newLhs = nerdamer('expand(' + eq.lhs + '-(' + value + '))');
+          newRhs = nerdamer('expand(' + eq.rhs + '-(' + value + '))');
+          ruleLabel = STRINGS.subtractBothSides + ': ' + value;
+          break;
+        case 'multiply':
+          newLhs = nerdamer('expand((' + eq.lhs + ')*(' + value + '))');
+          newRhs = nerdamer('expand((' + eq.rhs + ')*(' + value + '))');
+          ruleLabel = STRINGS.multiplyBothSides + ': ' + value;
+          break;
+        case 'divide':
+          try {
+            if (nerdamer(value).text() === '0') {
+              this._showActionFeedback(STRINGS.divisionByZero);
+              return;
+            }
+          } catch { /* let nerdamer handle it */ }
+          newLhs = nerdamer('simplify((' + eq.lhs + ')/(' + value + '))');
+          newRhs = nerdamer('simplify((' + eq.rhs + ')/(' + value + '))');
+          ruleLabel = STRINGS.divideBothSides + ': ' + value;
+          break;
+        case 'expand':
+          newLhs = nerdamer('expand(' + eq.lhs + ')');
+          newRhs = nerdamer('expand(' + eq.rhs + ')');
+          if (newLhs.text() === eq.lhs && newRhs.text() === eq.rhs) {
+            this._showActionFeedback(STRINGS.nothingToExpand);
+            return;
+          }
+          ruleLabel = STRINGS.expandParens;
+          break;
+        case 'simplify':
+          newLhs = nerdamer('simplify(' + eq.lhs + ')');
+          newRhs = nerdamer('simplify(' + eq.rhs + ')');
+          if (newLhs.text() === eq.lhs && newRhs.text() === eq.rhs) {
+            this._showActionFeedback(STRINGS.nothingToSimplify);
+            return;
+          }
+          ruleLabel = STRINGS.simplifyTerms;
+          break;
+        default:
+          return;
+      }
 
-      const ruleLabel = (flippedSign === '-' ? STRINGS.subtractBothSides : STRINGS.addBothSides) + ': ' + termValue;
-
-      // Detect solved state: one side is just the variable, other has no variables.
-      // Use nerdamer .variables() instead of regex — handles fractions, negatives, decimals.
-      const variable = MathUtils.detectVariable(this.currentEquation.lhs + '=' + this.currentEquation.rhs);
       const lhsText = newLhs.text();
       const rhsText = newRhs.text();
-      const rhsVars = nerdamer(rhsText).variables();
+
+      // Detect solved state
+      const variable = MathUtils.detectVariable(eq.lhs + '=' + eq.rhs);
       const lhsVars = nerdamer(lhsText).variables();
+      const rhsVars = nerdamer(rhsText).variables();
       const isFinal = (lhsText === variable && rhsVars.length === 0) ||
                       (rhsText === variable && lhsVars.length === 0);
 
@@ -439,57 +431,164 @@ const InteractiveBoard = {
         isFinal
       };
 
-      this.steps.push(newStep);
-      this._userSteps.push(newStep);
-
-      // Persist board state to session
-      if (SessionManager.activeSessionId) {
-        const updates = { boardData: this.getState() };
-        if (isFinal) {
-          updates.status = 'solved';
-        }
-        SessionManager.updateSession(SessionManager.activeSessionId, updates);
-      }
-
-      const stepsContainer = document.getElementById('steps-container');
-      const conn = document.createElement('div');
-      conn.className = 'step-connector';
-      stepsContainer.appendChild(conn);
-
-      const card = this.createStepCard(newStep, this.steps.length - 1);
-      stepsContainer.appendChild(card);
-
-      gsap.from(card, {
-        y: 40,
-        opacity: 0,
-        duration: 0.5,
-        ease: 'back.out(1.7)'
-      });
-      gsap.delayedCall(0.2, () => this.animateStepBadges());
-
-      if (!isFinal) {
-        this.setupInteractiveZone(newStep);
-      } else {
-        // Solved — clear interactive zone
-        this._unsetInteract();
-        const zone = document.getElementById('interactive-zone');
-        zone.innerHTML = '';
-        const msg = document.createElement('p');
-        msg.textContent = STRINGS.solution + '!';
-        msg.style.cssText = 'text-align:center;color:var(--success);font-size:1.25rem;font-weight:600;padding:1.5rem;';
-        zone.appendChild(msg);
-      }
-
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      this._addUserStep(newStep);
     } catch (err) {
-      console.error('Term move failed:', err);
-      // Reset interactive zone so user isn't left with stale/broken state
-      if (this.currentEquation) {
-        this.setupInteractiveZone({ lhs: this.currentEquation.lhs, rhs: this.currentEquation.rhs });
-      }
-    } finally {
-      this._animating = false;
+      console.error('Action failed:', err);
+      this._showActionFeedback(STRINGS.actionError);
     }
+  },
+
+  _showRewriteInput() {
+    // Highlight rewrite button
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+    const rewriteBtn = document.querySelector('.action-btn--rewrite');
+    if (rewriteBtn) rewriteBtn.classList.add('active');
+
+    const inputArea = document.getElementById('action-input-area');
+    inputArea.style.display = '';
+    inputArea.innerHTML = '';
+
+    const label = document.createElement('span');
+    label.className = 'action-input-label';
+    label.textContent = STRINGS.freeRewrite + ':';
+    inputArea.appendChild(label);
+
+    const input = document.createElement('input');
+    input.className = 'glass-input action-value-input action-value-input--wide';
+    input.type = 'text';
+    input.placeholder = STRINGS.rewritePlaceholder;
+    inputArea.appendChild(input);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'btn-primary btn-accent action-apply-btn';
+    applyBtn.textContent = STRINGS.apply;
+    applyBtn.addEventListener('click', () => this._validateRewrite(input.value.trim()));
+    inputArea.appendChild(applyBtn);
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this._validateRewrite(input.value.trim());
+    });
+
+    const errorMsg = document.createElement('p');
+    errorMsg.id = 'rewrite-error';
+    errorMsg.className = 'rewrite-error';
+    errorMsg.style.display = 'none';
+    inputArea.appendChild(errorMsg);
+
+    gsap.from(inputArea, { opacity: 0, y: -10, duration: 0.3, ease: 'power2.out' });
+    requestAnimationFrame(() => input.focus());
+  },
+
+  _validateRewrite(equationStr) {
+    if (!equationStr || !equationStr.includes('=')) {
+      this._showRewriteError(STRINGS.rewriteNeedsEquals);
+      return;
+    }
+
+    try {
+      // Convert user input to nerdamer format
+      const nerdamerStr = MathUtils.latexToNerdamer(equationStr);
+      const parts = nerdamerStr.split('=');
+      if (parts.length !== 2) {
+        this._showRewriteError(STRINGS.rewriteInvalid);
+        return;
+      }
+
+      const newLhs = parts[0].trim();
+      const newRhs = parts[1].trim();
+      const variable = MathUtils.detectVariable(this.currentEquation.lhs + '=' + this.currentEquation.rhs);
+
+      // Solve current and new equations, compare solutions
+      const currentEq = this.currentEquation.lhs + '=' + this.currentEquation.rhs;
+      const currentSolution = nerdamer.solve(currentEq, variable).toString();
+      const newEq = newLhs + '=' + newRhs;
+      const newSolution = nerdamer.solve(newEq, variable).toString();
+
+      if (currentSolution !== newSolution) {
+        this._showRewriteError(STRINGS.rewriteSolutionMismatch);
+        return;
+      }
+
+      // Detect if solved
+      const lhsVars = nerdamer(newLhs).variables();
+      const rhsVars = nerdamer(newRhs).variables();
+      const isFinal = (newLhs === variable && rhsVars.length === 0) ||
+                      (newRhs === variable && lhsVars.length === 0);
+
+      const newStep = {
+        latex: MathUtils.nerdamerToLatex(nerdamer(newLhs)) + ' = ' + MathUtils.nerdamerToLatex(nerdamer(newRhs)),
+        rule: STRINGS.freeRewrite,
+        lhs: newLhs,
+        rhs: newRhs,
+        isFinal
+      };
+
+      this._addUserStep(newStep);
+    } catch (err) {
+      console.error('Rewrite validation failed:', err);
+      this._showRewriteError(STRINGS.rewriteInvalid);
+    }
+  },
+
+  _showRewriteError(msg) {
+    const el = document.getElementById('rewrite-error');
+    if (el) {
+      el.textContent = msg;
+      el.style.display = '';
+      gsap.from(el, { opacity: 0, duration: 0.3 });
+    }
+  },
+
+  _showActionFeedback(msg) {
+    const inputArea = document.getElementById('action-input-area');
+    if (!inputArea) return;
+    inputArea.style.display = '';
+    inputArea.innerHTML = '';
+    const p = document.createElement('p');
+    p.textContent = msg;
+    p.style.cssText = 'text-align:center;color:var(--warning);font-size:0.85rem;margin:0;';
+    inputArea.appendChild(p);
+    gsap.from(p, { opacity: 0, duration: 0.3 });
+    // Auto-hide after 2s
+    gsap.to(inputArea, { opacity: 0, duration: 0.3, delay: 2, onComplete: () => {
+      inputArea.style.display = 'none';
+      inputArea.style.opacity = '1';
+    }});
+  },
+
+  _addUserStep(newStep) {
+    this.steps.push(newStep);
+    this._userSteps.push(newStep);
+
+    // Persist board state to session
+    if (SessionManager.activeSessionId) {
+      const updates = { boardData: this.getState() };
+      if (newStep.isFinal) updates.status = 'solved';
+      SessionManager.updateSession(SessionManager.activeSessionId, updates);
+    }
+
+    // Render step card
+    const stepsContainer = document.getElementById('steps-container');
+    stepsContainer.appendChild(this.createStepConnector(newStep.rule));
+
+    const card = this.createStepCard(newStep, this.steps.length - 1);
+    stepsContainer.appendChild(card);
+
+    gsap.from(card, { y: 40, opacity: 0, duration: 0.5, ease: 'back.out(1.7)' });
+    gsap.delayedCall(0.2, () => this.animateStepBadges());
+
+    if (!newStep.isFinal) {
+      this.setupInteractiveZone(newStep);
+    } else {
+      const zone = document.getElementById('interactive-zone');
+      zone.innerHTML = '';
+      const msg = document.createElement('p');
+      msg.textContent = STRINGS.solution + '!';
+      msg.style.cssText = 'text-align:center;color:var(--success);font-size:1.25rem;font-weight:600;padding:1.5rem;';
+      zone.appendChild(msg);
+    }
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
 
   animateStepBadges() {
@@ -529,7 +628,7 @@ const InteractiveBoard = {
     allBtn.addEventListener('click', () => this._revealAllSteps());
     bar.appendChild(allBtn);
 
-    container.insertBefore(bar, container.firstChild);
+    container.appendChild(bar);
   },
 
   _revealNextStep() {
@@ -538,9 +637,7 @@ const InteractiveBoard = {
     const stepsContainer = document.getElementById('steps-container');
     const step = this.steps[this._revealedCount];
 
-    const conn = document.createElement('div');
-    conn.className = 'step-connector';
-    stepsContainer.appendChild(conn);
+    stepsContainer.appendChild(this.createStepConnector(step.rule));
 
     const card = this.createStepCard(step, this._revealedCount);
     stepsContainer.appendChild(card);
@@ -553,6 +650,11 @@ const InteractiveBoard = {
     // Update interactive zone to match revealed step
     if (!step.isFinal && step.lhs && step.rhs) {
       this.setupInteractiveZone(step);
+      // Re-render hint buttons (setupInteractiveZone cleared the zone)
+      if (this._revealedCount < this.steps.length) {
+        const zone = document.getElementById('interactive-zone');
+        this._renderHintButtons(zone);
+      }
     }
 
     // If this was the final step or all revealed, remove hint buttons
@@ -561,7 +663,6 @@ const InteractiveBoard = {
       if (bar) gsap.to(bar, { opacity: 0, height: 0, duration: 0.3, onComplete: () => bar.remove() });
 
       if (step.isFinal) {
-        this._unsetInteract();
         const zone = document.getElementById('interactive-zone');
         zone.innerHTML = '';
         const msg = document.createElement('p');
@@ -580,10 +681,7 @@ const InteractiveBoard = {
     while (this._revealedCount < this.steps.length) {
       const step = this.steps[this._revealedCount];
 
-      const conn = document.createElement('div');
-      conn.className = 'step-connector';
-      stepsContainer.appendChild(conn);
-
+      stepsContainer.appendChild(this.createStepConnector(step.rule));
       stepsContainer.appendChild(this.createStepCard(step, this._revealedCount));
       this._revealedCount++;
     }
@@ -600,7 +698,6 @@ const InteractiveBoard = {
     // Show final state
     const lastStep = this.steps[this.steps.length - 1];
     if (lastStep && lastStep.isFinal) {
-      this._unsetInteract();
       const zone = document.getElementById('interactive-zone');
       zone.innerHTML = '';
       const msg = document.createElement('p');
@@ -616,13 +713,7 @@ const InteractiveBoard = {
     }
   },
 
-  _unsetInteract() {
-    try { interact('.draggable-term').unset(); } catch (e) { /* no-op */ }
-    try { interact('.drop-zone').unset(); } catch (e) { /* no-op */ }
-  },
-
   cleanup() {
-    this._unsetInteract();
     if (this._fabTween) {
       this._fabTween.kill();
       this._fabTween = null;
@@ -631,7 +722,6 @@ const InteractiveBoard = {
     document.getElementById('interactive-zone').innerHTML = '';
     this.currentEquation = null;
     this.steps = [];
-    this._animating = false;
     this._originalLatex = null;
     this._solverSteps = [];
     this._userSteps = [];

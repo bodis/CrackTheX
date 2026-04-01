@@ -62,13 +62,13 @@ const Validator = {
       if (this._mode === 'ocr') {
         cardOriginal.style.display = '';
         cardLabel.textContent = STRINGS.recognized;
-        input.placeholder = 'LaTeX keplet...';
+        input.placeholder = STRINGS.latexPlaceholder || 'LaTeX képlet...';
         // Image not persisted — show placeholder
         const preview = document.getElementById('cropped-preview');
         preview.src = '';
-        preview.alt = 'Kep nem elerheto';
+        preview.alt = STRINGS.imageNotAvailable || 'Kép nem elérhető';
         const label = document.querySelector('#card-original .card-label');
-        if (label) label.textContent = 'Eredeti (kep nem elerheto)';
+        if (label) label.textContent = STRINGS.originalImageNA || 'Eredeti (kép nem elérhető)';
       } else {
         cardOriginal.style.display = 'none';
         cardLabel.textContent = STRINGS.equation;

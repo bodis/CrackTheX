@@ -12,6 +12,14 @@ const SessionManager = {
   ACTIVE_KEY: 'crackthex_active_session',
   SEEN_KEY: 'crackthex_sidebar_seen',
 
+  _getStatusLabels() {
+    return {
+      'new': STRINGS.statusNew || 'Új',
+      'in-progress': STRINGS.statusInProgress || 'Folyamatban',
+      'solved': STRINGS.statusSolved || 'Megoldva'
+    };
+  },
+
   // ---- Persistence ----
 
   load() {
@@ -251,7 +259,7 @@ const SessionManager = {
 
     // Update equation text
     const eqEl = card.querySelector('.session-equation');
-    if (eqEl) eqEl.textContent = session.displayText || 'Uj feladat';
+    if (eqEl) eqEl.textContent = session.displayText || STRINGS.newProblem;
 
     // Update status dot
     const dot = card.querySelector('.session-status-dot');
@@ -262,7 +270,7 @@ const SessionManager = {
     // Update meta
     const meta = card.querySelector('.session-meta');
     if (meta) {
-      const statusLabels = { 'new': 'Uj', 'in-progress': 'Folyamatban', 'solved': 'Megoldva' };
+      const statusLabels = this._getStatusLabels();
       meta.textContent = (statusLabels[session.status] || '') + ' \u00b7 ' + this.formatRelativeTime(session.updatedAt);
     }
   },
@@ -278,18 +286,18 @@ const SessionManager = {
 
     const eq = document.createElement('div');
     eq.className = 'session-equation';
-    eq.textContent = session.displayText || 'Uj feladat';
+    eq.textContent = session.displayText || STRINGS.newProblem;
     card.appendChild(eq);
 
     const meta = document.createElement('div');
     meta.className = 'session-meta';
-    const statusLabels = { 'new': 'Uj', 'in-progress': 'Folyamatban', 'solved': 'Megoldva' };
+    const statusLabels = { 'new': STRINGS.statusNew || 'Új', 'in-progress': STRINGS.statusInProgress || 'Folyamatban', 'solved': STRINGS.statusSolved || 'Megoldva' };
     meta.textContent = (statusLabels[session.status] || '') + ' \u00b7 ' + this.formatRelativeTime(session.updatedAt);
     card.appendChild(meta);
 
     const del = document.createElement('button');
     del.className = 'btn-delete';
-    del.setAttribute('aria-label', 'Torles');
+    del.setAttribute('aria-label', STRINGS.delete_ || 'Törlés');
     del.textContent = '\u2715';
     card.appendChild(del);
 
@@ -299,13 +307,13 @@ const SessionManager = {
   formatRelativeTime(timestamp) {
     const diff = Date.now() - timestamp;
     const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) return 'most';
+    if (seconds < 60) return STRINGS.timeJustNow || 'most';
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes + ' p.';
+    if (minutes < 60) return minutes + ' ' + (STRINGS.timeMinutes || 'p.');
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + ' o.';
+    if (hours < 24) return hours + ' ' + (STRINGS.timeHours || 'ó.');
     const days = Math.floor(hours / 24);
-    return days + ' nap';
+    return days + ' ' + (STRINGS.timeDays || 'nap');
   },
 
   // ---- Mobile Drawer ----
@@ -329,7 +337,7 @@ const SessionManager = {
     const el = document.getElementById('topbar-equation');
     if (!el) return;
     const session = this.getSession(this.activeSessionId);
-    el.textContent = (session && session.displayText) ? session.displayText : 'Uj feladat';
+    el.textContent = (session && session.displayText) ? session.displayText : STRINGS.newProblem;
   },
 
   // ---- Init ----
