@@ -10,12 +10,6 @@ npm run dev
 
 Opens at [http://localhost:3000](http://localhost:3000).
 
-Alternatively, use any static file server:
-
-```bash
-python3 -m http.server 8080
-```
-
 > **Note**: Opening `index.html` directly as a `file://` URL won't work — service workers and CDN scripts require HTTP.
 
 ## Features
