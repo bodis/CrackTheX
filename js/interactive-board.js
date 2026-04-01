@@ -49,7 +49,7 @@ const InteractiveBoard = {
       // Render all steps
       this.steps.forEach((step, i) => {
         if (i > 0) {
-          stepsContainer.appendChild(this.createStepConnector(step.rule));
+          stepsContainer.appendChild(this.createStepConnector(step));
         }
         stepsContainer.appendChild(this.createStepCard(step, i));
       });
@@ -123,7 +123,17 @@ const InteractiveBoard = {
     });
   },
 
-  createStepConnector(rule) {
+  /** Resolve a step's rule text from ruleKey+ruleParam (i18n-aware) or fall back to static rule */
+  _resolveRule(step) {
+    if (step.ruleKey) {
+      const base = STRINGS[step.ruleKey] || step.rule || step.ruleKey;
+      return step.ruleParam ? base + ': ' + step.ruleParam : base;
+    }
+    return step.rule || '';
+  },
+
+  createStepConnector(step) {
+    const rule = typeof step === 'string' ? step : this._resolveRule(step);
     const wrapper = document.createElement('div');
     wrapper.className = 'step-connector-wrapper';
 
@@ -151,11 +161,14 @@ const InteractiveBoard = {
     card.dataset.step = index;
 
     // Only show rule inside card for step 0 (starting equation)
-    if (index === 0 && step.rule) {
-      const rule = document.createElement('span');
-      rule.className = 'step-rule';
-      rule.textContent = step.rule;
-      card.appendChild(rule);
+    if (index === 0) {
+      const ruleText = this._resolveRule(step);
+      if (ruleText) {
+        const rule = document.createElement('span');
+        rule.className = 'step-rule';
+        rule.textContent = ruleText;
+        card.appendChild(rule);
+      }
     }
 
     const badge = document.createElement('span');
@@ -245,11 +258,12 @@ const InteractiveBoard = {
     };
 
     // 1. Display current equation (read-only KaTeX)
+    // Use nerdamerStrToDisplayLatex to avoid auto-simplification
     const eqDisplay = document.createElement('div');
     eqDisplay.className = 'action-equation-display';
     try {
-      const lhsLatex = MathUtils.nerdamerToLatex(nerdamer(step.lhs));
-      const rhsLatex = MathUtils.nerdamerToLatex(nerdamer(step.rhs));
+      const lhsLatex = MathUtils.nerdamerStrToDisplayLatex(step.lhs);
+      const rhsLatex = MathUtils.nerdamerStrToDisplayLatex(step.rhs);
       katex.render(lhsLatex + ' = ' + rhsLatex, eqDisplay, {
         throwOnError: false, displayMode: true, output: 'html'
       });
@@ -356,7 +370,7 @@ const InteractiveBoard = {
 
   _executeAction(actionId, value) {
     const eq = this.currentEquation;
-    let newLhs, newRhs, ruleLabel;
+    let newLhs, newRhs, ruleKey, ruleParam;
 
     // Convert Unicode math operators to ASCII for nerdamer
     if (value) {
@@ -368,17 +382,17 @@ const InteractiveBoard = {
         case 'add':
           newLhs = nerdamer('expand(' + eq.lhs + '+(' + value + '))');
           newRhs = nerdamer('expand(' + eq.rhs + '+(' + value + '))');
-          ruleLabel = STRINGS.addBothSides + ': ' + value;
+          ruleKey = 'addBothSides'; ruleParam = value;
           break;
         case 'subtract':
           newLhs = nerdamer('expand(' + eq.lhs + '-(' + value + '))');
           newRhs = nerdamer('expand(' + eq.rhs + '-(' + value + '))');
-          ruleLabel = STRINGS.subtractBothSides + ': ' + value;
+          ruleKey = 'subtractBothSides'; ruleParam = value;
           break;
         case 'multiply':
           newLhs = nerdamer('expand((' + eq.lhs + ')*(' + value + '))');
           newRhs = nerdamer('expand((' + eq.rhs + ')*(' + value + '))');
-          ruleLabel = STRINGS.multiplyBothSides + ': ' + value;
+          ruleKey = 'multiplyBothSides'; ruleParam = value;
           break;
         case 'divide':
           try {
@@ -389,7 +403,7 @@ const InteractiveBoard = {
           } catch { /* let nerdamer handle it */ }
           newLhs = nerdamer('simplify((' + eq.lhs + ')/(' + value + '))');
           newRhs = nerdamer('simplify((' + eq.rhs + ')/(' + value + '))');
-          ruleLabel = STRINGS.divideBothSides + ': ' + value;
+          ruleKey = 'divideBothSides'; ruleParam = value;
           break;
         case 'expand':
           newLhs = nerdamer('expand(' + eq.lhs + ')');
@@ -398,7 +412,7 @@ const InteractiveBoard = {
             this._showActionFeedback(STRINGS.nothingToExpand);
             return;
           }
-          ruleLabel = STRINGS.expandParens;
+          ruleKey = 'expandParens';
           break;
         case 'simplify':
           newLhs = nerdamer('simplify(' + eq.lhs + ')');
@@ -407,7 +421,7 @@ const InteractiveBoard = {
             this._showActionFeedback(STRINGS.nothingToSimplify);
             return;
           }
-          ruleLabel = STRINGS.simplifyTerms;
+          ruleKey = 'simplifyTerms';
           break;
         default:
           return;
@@ -423,9 +437,12 @@ const InteractiveBoard = {
       const isFinal = (lhsText === variable && rhsVars.length === 0) ||
                       (rhsText === variable && lhsVars.length === 0);
 
+      const ruleLabel = ruleParam ? (STRINGS[ruleKey] || ruleKey) + ': ' + ruleParam : (STRINGS[ruleKey] || ruleKey);
       const newStep = {
         latex: MathUtils.nerdamerToLatex(newLhs) + ' = ' + MathUtils.nerdamerToLatex(newRhs),
         rule: ruleLabel,
+        ruleKey: ruleKey,
+        ruleParam: ruleParam || null,
         lhs: lhsText,
         rhs: rhsText,
         isFinal
@@ -518,6 +535,8 @@ const InteractiveBoard = {
       const newStep = {
         latex: MathUtils.nerdamerToLatex(nerdamer(newLhs)) + ' = ' + MathUtils.nerdamerToLatex(nerdamer(newRhs)),
         rule: STRINGS.freeRewrite,
+        ruleKey: 'freeRewrite',
+        ruleParam: null,
         lhs: newLhs,
         rhs: newRhs,
         isFinal
@@ -569,7 +588,7 @@ const InteractiveBoard = {
 
     // Render step card
     const stepsContainer = document.getElementById('steps-container');
-    stepsContainer.appendChild(this.createStepConnector(newStep.rule));
+    stepsContainer.appendChild(this.createStepConnector(newStep));
 
     const card = this.createStepCard(newStep, this.steps.length - 1);
     stepsContainer.appendChild(card);
@@ -637,7 +656,7 @@ const InteractiveBoard = {
     const stepsContainer = document.getElementById('steps-container');
     const step = this.steps[this._revealedCount];
 
-    stepsContainer.appendChild(this.createStepConnector(step.rule));
+    stepsContainer.appendChild(this.createStepConnector(step));
 
     const card = this.createStepCard(step, this._revealedCount);
     stepsContainer.appendChild(card);
@@ -681,7 +700,7 @@ const InteractiveBoard = {
     while (this._revealedCount < this.steps.length) {
       const step = this.steps[this._revealedCount];
 
-      stepsContainer.appendChild(this.createStepConnector(step.rule));
+      stepsContainer.appendChild(this.createStepConnector(step));
       stepsContainer.appendChild(this.createStepCard(step, this._revealedCount));
       this._revealedCount++;
     }

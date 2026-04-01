@@ -15,6 +15,12 @@ const Solver = {
     }
   },
 
+  /** Build a rule string from a key and optional param, storing both for i18n re-rendering */
+  _rule(key, param) {
+    const text = param ? (STRINGS[key] || key) + ': ' + param : (STRINGS[key] || key);
+    return { rule: text, ruleKey: key, ruleParam: param || null };
+  },
+
   /**
    * Detect if we can divide both sides by a common factor before expanding.
    * Returns { divisor, innerLhs } or null.
@@ -62,9 +68,10 @@ const Solver = {
       const opStr = op + term.raw;
       lhs = nerdamer('expand(' + lhs.text() + opStr + ')');
       rhs = nerdamer('expand(' + rhs.text() + opStr + ')');
+      const ruleKey = op === '-' ? 'subtractBothSides' : 'addBothSides';
       steps.push({
         latex: MathUtils.nerdamerToLatex(lhs) + ' = ' + MathUtils.nerdamerToLatex(rhs),
-        rule: (op === '-' ? STRINGS.subtractBothSides : STRINGS.addBothSides) + ': ' + term.raw,
+        ...Solver._rule(ruleKey, term.raw),
         lhs: lhs.text(),
         rhs: rhs.text()
       });
@@ -75,9 +82,10 @@ const Solver = {
       const opStr = op + term.raw;
       lhs = nerdamer('expand(' + lhs.text() + opStr + ')');
       rhs = nerdamer('expand(' + rhs.text() + opStr + ')');
+      const ruleKey = op === '-' ? 'subtractBothSides' : 'addBothSides';
       steps.push({
         latex: MathUtils.nerdamerToLatex(lhs) + ' = ' + MathUtils.nerdamerToLatex(rhs),
-        rule: (op === '-' ? STRINGS.subtractBothSides : STRINGS.addBothSides) + ': ' + term.raw,
+        ...Solver._rule(ruleKey, term.raw),
         lhs: lhs.text(),
         rhs: rhs.text()
       });
@@ -91,7 +99,7 @@ const Solver = {
       rhs = rhsSimp;
       steps.push({
         latex: MathUtils.nerdamerToLatex(lhs) + ' = ' + MathUtils.nerdamerToLatex(rhs),
-        rule: STRINGS.simplify,
+        ...Solver._rule('simplify'),
         lhs: lhs.text(),
         rhs: rhs.text()
       });
@@ -107,7 +115,7 @@ const Solver = {
         rhs = nerdamer('simplify((' + rhs.text() + ')/(' + coeff + '))');
         steps.push({
           latex: MathUtils.nerdamerToLatex(lhs) + ' = ' + MathUtils.nerdamerToLatex(rhs),
-          rule: STRINGS.divideBothSides + ': ' + coeff,
+          ...Solver._rule('divideBothSides', coeff),
           lhs: lhs.text(),
           rhs: rhs.text()
         });
@@ -179,7 +187,7 @@ const Solver = {
                      + MathUtils.nerdamerStrToDisplayLatex(rhsStr);
     steps.push({
       latex: step0Latex,
-      rule: STRINGS.startingEquation,
+      ...this._rule('startingEquation'),
       lhs: lhsStr,
       rhs: rhsStr
     });
@@ -204,7 +212,7 @@ const Solver = {
 
       steps.push({
         latex: MathUtils.nerdamerStrToDisplayLatex(newLhs) + ' = ' + MathUtils.nerdamerStrToDisplayLatex(newRhs),
-        rule: STRINGS.divideBothSides + ': ' + divisor,
+        ...this._rule('divideBothSides', divisor),
         lhs: newLhs,
         rhs: newRhs,
         alternatives: altPreview ? [{
@@ -235,13 +243,13 @@ const Solver = {
         if (rStep) currentRhs = rStep.expr;
 
         // Determine rule label
-        let rule;
+        let ruleData;
         const isSimplify = (lStep && lStep.isSimplify) || (rStep && rStep.isSimplify);
         if (isSimplify) {
-          rule = STRINGS.simplifyTerms;
+          ruleData = this._rule('simplifyTerms');
         } else {
           const desc = (lStep && lStep.description) || (rStep && rStep.description);
-          rule = desc ? STRINGS.expandOuter + ': ' + desc : STRINGS.expandParens;
+          ruleData = desc ? this._rule('expandOuter', desc) : this._rule('expandParens');
         }
 
         // Use nerdamerStrToDisplayLatex to preserve intermediate structure
@@ -251,7 +259,7 @@ const Solver = {
 
         const expandStep = {
           latex: lhsDisplay + ' = ' + rhsDisplay,
-          rule: rule,
+          ...ruleData,
           lhs: currentLhs,
           rhs: currentRhs
         };
@@ -278,7 +286,7 @@ const Solver = {
       const cleaned = solStr.replace(/^\[|\]$/g, '');
       steps.push({
         latex: variable + ' = ' + MathUtils.nerdamerToLatex(nerdamer(cleaned)),
-        rule: STRINGS.solution,
+        ...this._rule('solution'),
         lhs: variable,
         rhs: cleaned,
         isFinal: true
@@ -310,7 +318,7 @@ const Solver = {
 
     steps.push({
       latex: latexInput,
-      rule: STRINGS.startingEquation,
+      ...this._rule('startingEquation'),
       lhs: '',
       rhs: ''
     });
@@ -321,7 +329,7 @@ const Solver = {
       const cleaned = solStr.replace(/^\[|\]$/g, '');
       steps.push({
         latex: variable + ' = ' + MathUtils.nerdamerToLatex(nerdamer(cleaned)),
-        rule: STRINGS.directSolution,
+        ...this._rule('directSolution'),
         lhs: variable,
         rhs: cleaned,
         isFinal: true
@@ -329,7 +337,7 @@ const Solver = {
     } catch {
       steps.push({
         latex: STRINGS.noSolution,
-        rule: STRINGS.errorParsing,
+        ...this._rule('errorParsing'),
         lhs: '',
         rhs: '',
         isFinal: true
