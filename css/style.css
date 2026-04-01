@@ -504,6 +504,41 @@ body::after {
   opacity: 0.8;
 }
 
+/* ---- HINT BUTTONS ---- */
+.hint-bar {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.btn-hint {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-cyan) 100%);
+  color: #fff;
+  border: none;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.85rem;
+}
+
+.btn-hint:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+}
+
+.btn-show-all {
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  padding: 0.65rem 1.5rem;
+  font-size: 0.85rem;
+}
+
+.btn-show-all:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+}
+
 /* ========== BUTTONS ========== */
 .btn-primary {
   position: relative;

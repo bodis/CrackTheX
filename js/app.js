@@ -48,7 +48,9 @@ const STRINGS = {
   divideFirstHint: 'Mindket oldal oszthato',
   alternativePath: 'Mas ut',
   altExpandDesc: 'A zarojelek felbontasaval is megoldhato',
-  altDivideDesc: 'Eloszor osztas mindket oldalon'
+  altDivideDesc: 'Eloszor osztas mindket oldalon',
+  nextStep: 'Kovetkezo lepes',
+  showAll: 'Teljes megoldas'
 };
 
 // ========== STATE MACHINE ==========

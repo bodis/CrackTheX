@@ -8,6 +8,12 @@ const MathUtils = {
   latexToNerdamer(latex) {
     let expr = latex;
 
+    // Convert Unicode math operators to ASCII (from copy-paste)
+    expr = expr.replace(/[⋅·]/g, '*');
+    expr = expr.replace(/[−–]/g, '-');
+    expr = expr.replace(/×/g, '*');
+    expr = expr.replace(/÷/g, '/');
+
     // Remove display math delimiters
     expr = expr.replace(/\\left|\\right/g, '');
 
@@ -288,6 +294,12 @@ const MathUtils = {
     if (!input || input.includes('\\')) return input;
 
     let result = input;
+
+    // Convert Unicode math operators to ASCII (from copy-paste)
+    result = result.replace(/[⋅·]/g, '*');
+    result = result.replace(/[−–]/g, '-');
+    result = result.replace(/×/g, '*');
+    result = result.replace(/÷/g, '/');
 
     // sqrt(...) → \sqrt{...}
     result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');

@@ -8,15 +8,19 @@ const InteractiveBoard = {
   _originalLatex: null,
   _solverSteps: [],
   _userSteps: [],
+  _revealedCount: 0,
 
   getState() {
-    if (!this.currentEquation) return null;
+    // Return steps even if currentEquation is null (e.g. fully solved)
+    if (!this._solverSteps || this._solverSteps.length === 0) return null;
+    const allSteps = [...this._solverSteps, ...this._userSteps];
+    const lastStep = allSteps[allSteps.length - 1];
     return {
       latex: this._originalLatex,
       solverSteps: this._solverSteps,
       userSteps: this._userSteps,
-      currentLhs: this.currentEquation.lhs,
-      currentRhs: this.currentEquation.rhs
+      currentLhs: this.currentEquation ? this.currentEquation.lhs : (lastStep && lastStep.lhs) || '',
+      currentRhs: this.currentEquation ? this.currentEquation.rhs : (lastStep && lastStep.rhs) || ''
     };
   },
 
@@ -73,7 +77,7 @@ const InteractiveBoard = {
         });
       }
     } else {
-      // Fresh solve
+      // Fresh solve — show only Step 0, let user solve or reveal hints
       this._solverSteps = Solver.solve(data.latex);
       this.steps = [...this._solverSteps];
 
@@ -85,34 +89,31 @@ const InteractiveBoard = {
         return;
       }
 
-      this.steps.forEach((step, i) => {
-        if (i > 0) {
-          const conn = document.createElement('div');
-          conn.className = 'step-connector';
-          stepsContainer.appendChild(conn);
-        }
-        stepsContainer.appendChild(this.createStepCard(step, i));
-      });
+      // Show only the first step (original equation)
+      stepsContainer.appendChild(this.createStepCard(this.steps[0], 0));
+      this._revealedCount = 1;
 
       gsap.from('.step-card', {
-        y: 30,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.15,
-        ease: 'power2.out'
+        y: 30, opacity: 0, duration: 0.4, ease: 'power2.out'
       });
       gsap.delayedCall(0.3, () => this.animateStepBadges());
 
-      // Find last non-final step with lhs/rhs for interactive zone
-      let interactiveStep = null;
-      for (let i = this.steps.length - 1; i >= 0; i--) {
-        if (!this.steps[i].isFinal && this.steps[i].lhs && this.steps[i].rhs) {
-          interactiveStep = this.steps[i];
-          break;
-        }
+      // Set up interactive zone from the first step's lhs/rhs
+      const firstStep = this.steps[0];
+      if (firstStep.lhs && firstStep.rhs) {
+        this.setupInteractiveZone(firstStep);
       }
-      if (interactiveStep) {
-        this.setupInteractiveZone(interactiveStep);
+
+      // Show hint buttons if there are more steps
+      if (this.steps.length > 1) {
+        this._renderHintButtons(zone);
+      }
+
+      // Persist boardData immediately so it survives page refresh
+      if (SessionManager.activeSessionId) {
+        SessionManager.updateSession(SessionManager.activeSessionId, {
+          boardData: this.getState()
+        });
       }
     }
 
@@ -507,6 +508,114 @@ const InteractiveBoard = {
     });
   },
 
+  _renderHintButtons(container) {
+    // Remove existing hint bar if present
+    const existing = document.getElementById('hint-bar');
+    if (existing) existing.remove();
+
+    const bar = document.createElement('div');
+    bar.id = 'hint-bar';
+    bar.className = 'hint-bar';
+
+    const hintBtn = document.createElement('button');
+    hintBtn.className = 'btn-primary btn-hint';
+    hintBtn.textContent = STRINGS.nextStep;
+    hintBtn.addEventListener('click', () => this._revealNextStep());
+    bar.appendChild(hintBtn);
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'btn-primary btn-show-all';
+    allBtn.textContent = STRINGS.showAll;
+    allBtn.addEventListener('click', () => this._revealAllSteps());
+    bar.appendChild(allBtn);
+
+    container.insertBefore(bar, container.firstChild);
+  },
+
+  _revealNextStep() {
+    if (this._revealedCount >= this.steps.length) return;
+
+    const stepsContainer = document.getElementById('steps-container');
+    const step = this.steps[this._revealedCount];
+
+    const conn = document.createElement('div');
+    conn.className = 'step-connector';
+    stepsContainer.appendChild(conn);
+
+    const card = this.createStepCard(step, this._revealedCount);
+    stepsContainer.appendChild(card);
+
+    gsap.from(card, { y: 40, opacity: 0, duration: 0.5, ease: 'back.out(1.7)' });
+    gsap.delayedCall(0.2, () => this.animateStepBadges());
+
+    this._revealedCount++;
+
+    // Update interactive zone to match revealed step
+    if (!step.isFinal && step.lhs && step.rhs) {
+      this.setupInteractiveZone(step);
+    }
+
+    // If this was the final step or all revealed, remove hint buttons
+    if (step.isFinal || this._revealedCount >= this.steps.length) {
+      const bar = document.getElementById('hint-bar');
+      if (bar) gsap.to(bar, { opacity: 0, height: 0, duration: 0.3, onComplete: () => bar.remove() });
+
+      if (step.isFinal) {
+        this._unsetInteract();
+        const zone = document.getElementById('interactive-zone');
+        zone.innerHTML = '';
+        const msg = document.createElement('p');
+        msg.textContent = STRINGS.solution + '!';
+        msg.style.cssText = 'text-align:center;color:var(--success);font-size:1.25rem;font-weight:600;padding:1.5rem;';
+        zone.appendChild(msg);
+      }
+    }
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+
+  _revealAllSteps() {
+    const stepsContainer = document.getElementById('steps-container');
+
+    while (this._revealedCount < this.steps.length) {
+      const step = this.steps[this._revealedCount];
+
+      const conn = document.createElement('div');
+      conn.className = 'step-connector';
+      stepsContainer.appendChild(conn);
+
+      stepsContainer.appendChild(this.createStepCard(step, this._revealedCount));
+      this._revealedCount++;
+    }
+
+    gsap.from('.step-card:not([data-animated])', {
+      y: 30, opacity: 0, duration: 0.4, stagger: 0.1, ease: 'power2.out'
+    });
+    gsap.delayedCall(0.3, () => this.animateStepBadges());
+
+    // Remove hint buttons
+    const bar = document.getElementById('hint-bar');
+    if (bar) gsap.to(bar, { opacity: 0, height: 0, duration: 0.3, onComplete: () => bar.remove() });
+
+    // Show final state
+    const lastStep = this.steps[this.steps.length - 1];
+    if (lastStep && lastStep.isFinal) {
+      this._unsetInteract();
+      const zone = document.getElementById('interactive-zone');
+      zone.innerHTML = '';
+      const msg = document.createElement('p');
+      msg.textContent = STRINGS.solution + '!';
+      msg.style.cssText = 'text-align:center;color:var(--success);font-size:1.25rem;font-weight:600;padding:1.5rem;';
+      zone.appendChild(msg);
+    } else if (lastStep && lastStep.lhs && lastStep.rhs) {
+      this.setupInteractiveZone(lastStep);
+    }
+
+    if (stepsContainer.lastElementChild) {
+      stepsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  },
+
   _unsetInteract() {
     try { interact('.draggable-term').unset(); } catch (e) { /* no-op */ }
     try { interact('.drop-zone').unset(); } catch (e) { /* no-op */ }
@@ -526,5 +635,6 @@ const InteractiveBoard = {
     this._originalLatex = null;
     this._solverSteps = [];
     this._userSteps = [];
+    this._revealedCount = 0;
   }
 };
