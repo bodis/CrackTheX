@@ -8,6 +8,18 @@ const InteractiveBoard = {
   _solverSteps: [],
   _userSteps: [],
   _revealedCount: 0,
+  _displayedStepCount: 0,
+
+  /** Get a copyable text history of all displayed steps (for testing/debugging) */
+  getTextHistory() {
+    const lines = [];
+    const displayed = [...this._solverSteps.slice(0, this._revealedCount), ...this._userSteps];
+    displayed.forEach((step, i) => {
+      const rule = step.ruleKey ? (step.ruleParam ? step.ruleKey + ': ' + step.ruleParam : step.ruleKey) : step.rule;
+      lines.push((i === 0 ? 'initial' : rule) + ': ' + step.lhs + ' = ' + step.rhs);
+    });
+    return lines.join('\n');
+  },
 
   getState() {
     // Return steps even if currentEquation is null (e.g. fully solved)
@@ -30,6 +42,7 @@ const InteractiveBoard = {
     zone.innerHTML = '';
 
     this._userSteps = [];
+    this._displayedStepCount = 0;
     this._originalLatex = data.latex || (data.boardData && data.boardData.latex);
 
     if (data.boardData) {
@@ -156,12 +169,15 @@ const InteractiveBoard = {
   },
 
   createStepCard(step, index) {
+    this._displayedStepCount++;
+    const displayNum = this._displayedStepCount;
+
     const card = document.createElement('div');
     card.className = 'glass-card step-card';
     card.dataset.step = index;
 
-    // Only show rule inside card for step 0 (starting equation)
-    if (index === 0) {
+    // Only show rule inside card for the first displayed step (starting equation)
+    if (displayNum === 1) {
       const ruleText = this._resolveRule(step);
       if (ruleText) {
         const rule = document.createElement('span');
@@ -174,7 +190,7 @@ const InteractiveBoard = {
     const badge = document.createElement('span');
     badge.className = 'step-badge';
     badge.textContent = '00';
-    badge.dataset.target = index + 1;
+    badge.dataset.target = displayNum;
     card.appendChild(badge);
 
     const eqDiv = document.createElement('div');
@@ -430,21 +446,18 @@ const InteractiveBoard = {
     }
   },
 
-  /** Expand one layer of innermost parentheses (does NOT combine terms) */
+  /** Expand one layer of innermost parentheses via pure distribution (no combining) */
   _doExpand(eq) {
     try {
-      // Try LHS first, then RHS — expand one coeff*(group) at a time
-      const lhsResult = MathUtils.expandOneLayer(eq.lhs);
-      if (lhsResult.changed && !lhsResult.isSimplify) {
-        const ruleParam = lhsResult.description || null;
-        this._createStringStep(lhsResult.expr, eq.rhs, 'expandParens', ruleParam, eq);
+      const lhsResult = this._distributeOneLayer(eq.lhs);
+      if (lhsResult.changed) {
+        this._createStringStep(lhsResult.expr, eq.rhs, 'expandParens', lhsResult.description, eq);
         return;
       }
 
-      const rhsResult = MathUtils.expandOneLayer(eq.rhs);
-      if (rhsResult.changed && !rhsResult.isSimplify) {
-        const ruleParam = rhsResult.description || null;
-        this._createStringStep(eq.lhs, rhsResult.expr, 'expandParens', ruleParam, eq);
+      const rhsResult = this._distributeOneLayer(eq.rhs);
+      if (rhsResult.changed) {
+        this._createStringStep(eq.lhs, rhsResult.expr, 'expandParens', rhsResult.description, eq);
         return;
       }
 
@@ -453,6 +466,73 @@ const InteractiveBoard = {
       console.error('Expand failed:', err);
       this._showActionFeedback(STRINGS.actionError);
     }
+  },
+
+  /**
+   * Pure mechanical distribution: finds innermost coeff*(group) and distributes
+   * term by term WITHOUT combining. e.g. -3*(23+x-43) → -69-3*x+129
+   */
+  _distributeOneLayer(exprStr) {
+    // Find innermost paren groups (no nested parens inside)
+    const groups = [];
+    for (let i = 0; i < exprStr.length; i++) {
+      if (exprStr[i] === '(') {
+        let depth = 1, j = i + 1, hasNested = false;
+        while (j < exprStr.length && depth > 0) {
+          if (exprStr[j] === '(') { depth++; hasNested = true; }
+          if (exprStr[j] === ')') depth--;
+          j++;
+        }
+        if (depth === 0 && !hasNested) {
+          groups.push({ start: i, end: j, content: exprStr.substring(i + 1, j - 1) });
+        }
+      }
+    }
+
+    // Try to find coeff*(group) and distribute
+    for (const group of groups) {
+      const before = exprStr.substring(0, group.start);
+      const after = exprStr.substring(group.end);
+
+      const coeffMatch = before.match(/(-?\d+)\*?$/);
+      if (!coeffMatch) continue;
+
+      const coeff = coeffMatch[1];
+      const coeffStart = group.start - coeffMatch[0].length;
+      const description = coeff + '(' + group.content + ')';
+
+      // Split content into signed terms: "23+x-43" → ["23", "+x", "-43"]
+      const terms = group.content.match(/[+-]?[^+-]+/g);
+      if (!terms) continue;
+
+      // Distribute: multiply each term by coefficient individually
+      const distributed = terms.map(t => {
+        t = t.trim();
+        try { return nerdamer(coeff + '*(' + t + ')').text(); } catch { return coeff + '*' + t; }
+      });
+
+      // Join with + and clean up double signs
+      let result = distributed.join('+').replace(/\+\-/g, '-').replace(/\+\+/g, '+');
+      // Remove leading +
+      if (result.startsWith('+')) result = result.substring(1);
+
+      const newExpr = exprStr.substring(0, coeffStart) + result + after;
+      if (newExpr !== exprStr) {
+        return { expr: newExpr, changed: true, description };
+      }
+    }
+
+    // Try removing bare grouping parens (no coefficient)
+    for (const group of groups) {
+      const before = exprStr.substring(0, group.start);
+      const after = exprStr.substring(group.end);
+      if (!/[\d)]\*?$/.test(before) && !/^\*?[\d(]/.test(after)) {
+        const newExpr = before + group.content + after;
+        if (newExpr !== exprStr) return { expr: newExpr, changed: true, description: null };
+      }
+    }
+
+    return { expr: exprStr, changed: false, description: null };
   },
 
   /** Combine like terms respecting parentheses (does NOT open parens) */
@@ -672,6 +752,9 @@ const InteractiveBoard = {
     }
 
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Log textual step history (for testing/debugging)
+    console.log('--- Step History ---\n' + this.getTextHistory());
   },
 
   animateStepBadges() {
@@ -809,5 +892,6 @@ const InteractiveBoard = {
     this._solverSteps = [];
     this._userSteps = [];
     this._revealedCount = 0;
+    this._displayedStepCount = 0;
   }
 };
