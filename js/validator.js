@@ -1,29 +1,28 @@
-// validator.js — Mathpix OCR + KaTeX rendering + live editing
+// validator.js — Mathpix OCR + KaTeX rendering + live editing + keyboard mode
 const Validator = {
   currentCroppedImage: null,
   debounceTimer: null,
   _boundOnInput: null,
   _boundSolve: null,
+  _boundBack: null,
   _initGeneration: 0,
+  _mode: 'ocr',
+  _focusTimer: null,
 
   init(data) {
     this._initGeneration++;
+    this._mode = data.mode || 'ocr';
 
-    this.currentCroppedImage = data.croppedImageDataURL;
-    document.getElementById('cropped-preview').src = data.croppedImageDataURL;
-
-    // GSAP entrance: glass cards stagger in from below
-    gsap.from('#state-validator .glass-card', {
-      y: 50,
-      opacity: 0,
-      duration: 0.5,
-      stagger: 0.2,
-      ease: 'power2.out'
-    });
+    // Wire back button
+    const btnBack = document.getElementById('btn-validator-back');
+    if (this._boundBack) {
+      btnBack.removeEventListener('click', this._boundBack);
+    }
+    this._boundBack = () => goToState(AppState.SCANNER);
+    btnBack.addEventListener('click', this._boundBack);
 
     const input = document.getElementById('latex-input');
     input.value = '';
-    input.placeholder = 'LaTeX keplet...';
 
     // Wire input listener (bound ref for cleanup)
     if (this._boundOnInput) {
@@ -44,7 +43,42 @@ const Validator = {
     document.getElementById('ocr-warning').style.display = 'none';
     document.getElementById('latex-render').innerHTML = '';
 
-    this.recognizeEquation(data.croppedImageDataURL);
+    const cardOriginal = document.getElementById('card-original');
+    const cardLabel = document.querySelector('#card-recognized .card-label');
+    const loading = document.getElementById('validator-loading');
+
+    if (this._mode === 'keyboard') {
+      // Keyboard mode: hide image card, adjust labels, show solve immediately
+      cardOriginal.style.display = 'none';
+      cardLabel.textContent = STRINGS.equation;
+      input.placeholder = STRINGS.inputPlaceholder;
+      loading.style.display = 'none';
+      btnSolve.style.display = '';
+
+      // GSAP entrance
+      gsap.from('#card-recognized', {
+        y: 50, opacity: 0, duration: 0.5, ease: 'power2.out'
+      });
+
+      // Auto-focus after entrance animation settles
+      this._focusTimer = setTimeout(() => { input.focus(); }, 700);
+    } else {
+      // OCR mode: show image card, restore labels, run OCR
+      cardOriginal.style.display = '';
+      cardLabel.textContent = STRINGS.recognized;
+      input.placeholder = 'LaTeX keplet...';
+
+      this.currentCroppedImage = data.croppedImageDataURL;
+      document.getElementById('cropped-preview').src = data.croppedImageDataURL;
+
+      // GSAP entrance: glass cards stagger in from below
+      gsap.from('#state-validator .glass-card', {
+        y: 50, opacity: 0, duration: 0.5,
+        stagger: 0.2, ease: 'power2.out'
+      });
+
+      this.recognizeEquation(data.croppedImageDataURL);
+    }
   },
 
   async recognizeEquation(base64DataURL) {
@@ -116,7 +150,12 @@ const Validator = {
   onLatexInput(e) {
     clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
-      this.renderLatex(e.target.value);
+      const raw = e.target.value;
+      if (this._mode === 'keyboard' && !raw.includes('\\')) {
+        this.renderLatex(MathUtils.plainMathToLatex(raw));
+      } else {
+        this.renderLatex(raw);
+      }
     }, 200);
   },
 
@@ -136,6 +175,9 @@ const Validator = {
     clearTimeout(this.debounceTimer);
     this.debounceTimer = null;
 
+    clearTimeout(this._focusTimer);
+    this._focusTimer = null;
+
     document.getElementById('latex-render').innerHTML = '';
     document.getElementById('cropped-preview').src = '';
 
@@ -146,15 +188,33 @@ const Validator = {
     document.getElementById('ocr-warning').style.display = 'none';
     document.getElementById('validator-loading').style.display = 'none';
 
+    // Restore card-original visibility for next use
+    document.getElementById('card-original').style.display = '';
+
+    // Restore card label for next use
+    const cardLabel = document.querySelector('#card-recognized .card-label');
+    if (cardLabel) cardLabel.textContent = STRINGS.recognized;
+
+    // Remove input listener
     if (this._boundOnInput) {
       input.removeEventListener('input', this._boundOnInput);
       this._boundOnInput = null;
     }
 
+    // Remove solve listener
     const btnSolve = document.getElementById('btn-solve');
     if (this._boundSolve) {
       btnSolve.removeEventListener('click', this._boundSolve);
       this._boundSolve = null;
     }
+
+    // Remove back button listener
+    const btnBack = document.getElementById('btn-validator-back');
+    if (this._boundBack) {
+      btnBack.removeEventListener('click', this._boundBack);
+      this._boundBack = null;
+    }
+
+    this._mode = 'ocr';
   }
 };

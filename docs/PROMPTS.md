@@ -178,9 +178,103 @@ Verify the full review checklist in the run doc. This is the final run.
 
 ---
 
+## Run 7: Manual Keyboard Input + Entry Screen Redesign
+
+```
+Implement Run 7 of the CrackTheX project: Manual Keyboard Input + Entry Screen Redesign.
+
+Read the detailed run spec at docs/runs/RUN_7_KEYBOARD_INPUT.md for exactly what to build.
+
+This run redesigns the Scanner state into a Home/Entry screen and adds keyboard equation input:
+
+1. index.html -- Restructure #state-scanner:
+   - New #home-content with logo, tagline, two entry cards (Fotozas + Begepeles)
+   - Wrap camera elements in #camera-view container (hidden by default)
+   - Add "Vissza" (back) button to scanner controls
+
+2. css/style.css -- New styles:
+   - .home-content centered layout
+   - .entry-options 2-column grid
+   - .entry-card glass-card buttons with icons
+   - .entry-icon--camera (violet accent) and .entry-icon--keyboard (cyan accent)
+   - #camera-view full-screen positioning
+   - .btn-back styling
+
+3. js/camera.js -- Add home phase:
+   - init() starts at phase 'home' (no camera stream)
+   - startCamera() activates camera on "Fotozas" tap
+   - backToHome() stops stream, returns to home view
+   - Wire #entry-keyboard → goToState(VALIDATOR, { mode: 'keyboard' })
+
+4. js/validator.js -- Keyboard mode:
+   - Detect mode: 'keyboard' vs OCR from init data
+   - Keyboard mode: hide #card-original, change title to "Egyenlet", auto-focus input, skip OCR
+   - Use plainMathToLatex() for preview when in keyboard mode
+
+5. js/utils.js -- Plain math conversion:
+   - MathUtils.plainMathToLatex(): convert sqrt(), fractions, * to LaTeX
+   - Pass through if input already contains backslashes
+
+Test the review checklist in the run doc.
+```
+
+---
+
+## Run 8: Multi-Session Threads (Sidebar)
+
+```
+Implement Run 8 of the CrackTheX project: Multi-Session Threads.
+
+Read the detailed run spec at docs/runs/RUN_8_SESSIONS.md for exactly what to build.
+
+This run adds a sidebar with multiple equation sessions:
+
+1. js/sessions.js -- New SessionManager module:
+   - Session CRUD: create, read, update, delete
+   - localStorage persistence (load/save)
+   - State capture: captureCurrentState() saves validator/board state
+   - Session activation: save current, restore target session's app state
+   - Sidebar rendering: session cards with KaTeX equation preview, status dots, timestamps
+   - Mobile drawer: open/close with GSAP animation + backdrop
+   - Init: load sessions, create first if empty, wire event listeners
+
+2. index.html -- Layout changes:
+   - Add #mobile-topbar (hamburger + title + new button, mobile only)
+   - Add #sidebar aside with header + #session-list
+   - Add #sidebar-backdrop overlay
+   - Wrap existing #app in #main-area
+   - Add sessions.js script tag before app.js
+
+3. css/style.css -- Sidebar styles:
+   - .sidebar: fixed left, 260px, glass background, scrollable session list
+   - .session-card: compact glass card with status dot, equation, meta, delete button
+   - .sidebar-backdrop: dimmed overlay for mobile
+   - .mobile-topbar: fixed top bar with hamburger (mobile only)
+   - #main-area: margin-left offset on desktop, full width on mobile
+   - Responsive: sidebar slides in as drawer on <768px
+
+4. js/app.js -- Integration:
+   - goToState() updates active session's appState
+   - "Uj feladat" creates new session instead of just resetting
+   - DOMContentLoaded calls SessionManager.init()
+
+5. js/interactive-board.js -- State capture:
+   - Add getState() method returning currentEquation + steps
+   - Modify init() to restore from saved boardData when switching sessions
+   - handleTermMove() persists board state to session after each drag
+
+6. js/validator.js -- State capture:
+   - Add getState() method returning mode + latex + image
+   - Modify init() to restore from saved validatorData
+
+Test the review checklist in the run doc.
+```
+
+---
+
 ## Post-implementation
 
-After all 6 runs pass review:
+After all 8 runs pass review:
 
 1. **Commit:** `git add . && git commit -m "feat: CrackTheX MVP - interactive math equation solver PWA"`
 2. **Deploy:** Push to GitHub Pages, Netlify, or Vercel (static hosting, zero config)

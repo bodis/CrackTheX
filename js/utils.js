@@ -116,5 +116,34 @@ const MathUtils = {
   detectVariable(equationStr) {
     const match = equationStr.match(/[a-zA-Z]/);
     return match ? match[0] : 'x';
+  },
+
+  /**
+   * Convert plain math notation to LaTeX for KaTeX preview.
+   * Only used for rendering — the solver receives the raw input.
+   * If input contains backslashes, assume LaTeX and return as-is.
+   */
+  plainMathToLatex(input) {
+    if (!input || input.includes('\\')) return input;
+
+    let result = input;
+
+    // sqrt(...) → \sqrt{...}
+    result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');
+
+    // Fractions: must run group patterns first to avoid partial matches
+    // (group)/(group)
+    result = result.replace(/\(([^)]+)\)\s*\/\s*\(([^)]+)\)/g, '\\frac{$1}{$2}');
+    // (group)/token
+    result = result.replace(/\(([^)]+)\)\s*\/\s*([a-zA-Z0-9]+)/g, '\\frac{$1}{$2}');
+    // token/(group)
+    result = result.replace(/([a-zA-Z0-9]+)\s*\/\s*\(([^)]+)\)/g, '\\frac{$1}{$2}');
+    // token/token
+    result = result.replace(/([a-zA-Z0-9]+)\s*\/\s*([a-zA-Z0-9]+)/g, '\\frac{$1}{$2}');
+
+    // * → \cdot
+    result = result.replace(/\*/g, ' \\cdot ');
+
+    return result;
   }
 };

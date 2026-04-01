@@ -25,20 +25,58 @@
 <body>
   <div id="app">
 
-    <!-- STATE 1: SCANNER -->
+    <!-- STATE 1: HOME / ENTRY -->
     <section id="state-scanner" class="app-state active">
-      <div id="app-logo" class="gradient-text">CrackTheX</div>
-      <video id="camera-feed" autoplay playsinline></video>
-      <canvas id="capture-canvas" style="display:none;"></canvas>
-      <img id="captured-image" style="display:none;" alt="Captured" />
-      <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none;" />
-      <div id="scanner-controls" class="glass-bar">
-        <button id="btn-capture" class="btn-primary">Fotozas</button>
+      <!-- Home screen (default view) -->
+      <div id="home-content" class="home-content">
+        <div id="app-logo" class="gradient-text">CrackTheX</div>
+        <p class="home-tagline">Oldd meg az egyenletet lepesrol lepesre!</p>
+        <div class="entry-options">
+          <button class="glass-card entry-card entry-card--primary" id="entry-keyboard">
+            <svg class="entry-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
+            </svg>
+            <div>
+              <span class="entry-label">Begepeles</span>
+              <span class="entry-subtitle">Ird be az egyenletet</span>
+            </div>
+          </button>
+          <button class="glass-card entry-card" id="entry-camera">
+            <svg class="entry-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <div>
+              <span class="entry-label">Fotozas</span>
+              <span class="entry-subtitle">Fotozd le az egyenletet</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <!-- Camera sub-view (hidden until "Fotozas" tapped) -->
+      <div id="camera-view" style="display:none;">
+        <button id="btn-camera-back" class="btn-back-nav" aria-label="Vissza">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <video id="camera-feed" autoplay playsinline></video>
+        <canvas id="capture-canvas" style="display:none;"></canvas>
+        <img id="captured-image" style="display:none;" alt="Captured" />
+        <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none;" />
+        <div id="scanner-controls" class="glass-bar">
+          <button id="btn-capture" class="btn-primary">Fotozas</button>
+        </div>
       </div>
     </section>
 
     <!-- STATE 2: VALIDATOR -->
     <section id="state-validator" class="app-state">
+      <button id="btn-validator-back" class="btn-back-nav" aria-label="Vissza">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
       <div class="validator-content">
         <div class="glass-card" id="card-original">
           <h3 class="card-label">Eredeti</h3>

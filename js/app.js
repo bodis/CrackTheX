@@ -37,7 +37,11 @@ const STRINGS = {
   cameraError: 'Kamera nem elerheto. Hasznald a fajlfeltoltest!',
   apiError: 'Hiba a kepletfelismeresnel. Probald ujra vagy ird be kezzel!',
   offline: 'Nincs internetkapcsolat. A felismeres nem elerheto.',
-  dragHint: 'Huzd at a tagokat az egyenlojegjel masik oldalara!'
+  dragHint: 'Huzd at a tagokat az egyenlojegjel masik oldalara!',
+  equation: 'Egyenlet',
+  inputPlaceholder: 'pl. 2x + 3 = 7',
+  back: 'Vissza',
+  homeTagline: 'Oldd meg az egyenletet lepesrol lepesre!'
 };
 
 // ========== STATE MACHINE ==========
@@ -110,17 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-new').addEventListener('click', () => {
     goToState(AppState.SCANNER);
   });
-
-  // Logo letter stagger (runs once on first load)
-  const logoEl = document.getElementById('app-logo');
-  if (logoEl) {
-    const chars = logoEl.textContent.split('');
-    logoEl.innerHTML = chars.map(c => `<span class="logo-char">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
-    gsap.from('.logo-char', {
-      y: -20, opacity: 0, duration: 0.4,
-      stagger: 0.04, ease: 'back.out(2)', delay: 0.3
-    });
-  }
 
   // Start
   goToState(AppState.SCANNER);
