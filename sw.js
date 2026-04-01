@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crackthex-v3';
+const CACHE_NAME = 'crackthex-v4';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -8,6 +8,7 @@ const SHELL_ASSETS = [
   '/js/validator.js',
   '/js/solver.js',
   '/js/interactive-board.js',
+  '/js/sessions.js',
   '/js/utils.js',
   '/js/api.js',
   '/assets/icons/icon-192.png',

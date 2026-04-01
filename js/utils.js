@@ -119,6 +119,20 @@ const MathUtils = {
   },
 
   /**
+   * Strip LaTeX commands to produce readable plain text for sidebar cards.
+   * e.g. "\\frac{2x}{3} + 1 = 7" → "(2x)/(3) + 1 = 7"
+   */
+  latexToPlainText(latex) {
+    if (!latex) return '';
+    return latex
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+      .replace(/\\[a-zA-Z]+\{?/g, '')
+      .replace(/[{}]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
+  /**
    * Convert plain math notation to LaTeX for KaTeX preview.
    * Only used for rendering — the solver receives the raw input.
    * If input contains backslashes, assume LaTeX and return as-is.

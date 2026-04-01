@@ -91,7 +91,13 @@ function goToState(newState, data = {}) {
     opacity: 1,
     y: 0,
     duration: 0.4,
-    ease: 'power2.out'
+    ease: 'power2.out',
+    onComplete: () => {
+      // Update active session's appState after transition
+      if (SessionManager.activeSessionId) {
+        SessionManager.updateSession(SessionManager.activeSessionId, { appState: newState });
+      }
+    }
   });
 
   currentState = newState;
@@ -110,11 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) rippleEffect(btn, e);
   });
 
-  // Wire global buttons
+  // Wire global buttons (captureCurrentState handled inside activateSession)
   document.getElementById('btn-new').addEventListener('click', () => {
-    goToState(AppState.SCANNER);
+    const session = SessionManager.createSession();
+    SessionManager.activateSession(session.id);
   });
 
-  // Start
-  goToState(AppState.SCANNER);
+  // Initialize SessionManager (replaces direct goToState call)
+  SessionManager.init((targetState, targetData) => {
+    goToState(targetState, targetData);
+  });
 });

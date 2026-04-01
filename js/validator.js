@@ -9,9 +9,16 @@ const Validator = {
   _mode: 'ocr',
   _focusTimer: null,
 
+  getState() {
+    return {
+      mode: this._mode,
+      latex: document.getElementById('latex-input').value
+    };
+  },
+
   init(data) {
     this._initGeneration++;
-    this._mode = data.mode || 'ocr';
+    this._mode = data.mode || (data.validatorData && data.validatorData.mode) || 'ocr';
 
     // Wire back button
     const btnBack = document.getElementById('btn-validator-back');
@@ -47,7 +54,41 @@ const Validator = {
     const cardLabel = document.querySelector('#card-recognized .card-label');
     const loading = document.getElementById('validator-loading');
 
-    if (this._mode === 'keyboard') {
+    if (data.validatorData) {
+      // Restoring session — skip OCR, just restore UI state
+      loading.style.display = 'none';
+      btnSolve.style.display = '';
+
+      if (this._mode === 'ocr') {
+        cardOriginal.style.display = '';
+        cardLabel.textContent = STRINGS.recognized;
+        input.placeholder = 'LaTeX keplet...';
+        // Image not persisted — show placeholder
+        const preview = document.getElementById('cropped-preview');
+        preview.src = '';
+        preview.alt = 'Kep nem elerheto';
+        const label = document.querySelector('#card-original .card-label');
+        if (label) label.textContent = 'Eredeti (kep nem elerheto)';
+      } else {
+        cardOriginal.style.display = 'none';
+        cardLabel.textContent = STRINGS.equation;
+        input.placeholder = STRINGS.inputPlaceholder;
+      }
+
+      // Restore input value and render preview
+      input.value = data.validatorData.latex || '';
+      if (input.value) {
+        if (this._mode === 'keyboard' && !input.value.includes('\\')) {
+          this.renderLatex(MathUtils.plainMathToLatex(input.value));
+        } else {
+          this.renderLatex(input.value);
+        }
+      }
+
+      gsap.from('#card-recognized', {
+        y: 50, opacity: 0, duration: 0.5, ease: 'power2.out'
+      });
+    } else if (this._mode === 'keyboard') {
       // Keyboard mode: hide image card, adjust labels, show solve immediately
       cardOriginal.style.display = 'none';
       cardLabel.textContent = STRINGS.equation;
@@ -162,6 +203,16 @@ const Validator = {
   solve() {
     const latex = document.getElementById('latex-input').value.trim();
     if (!latex) return;
+
+    // Update session with equation info
+    if (SessionManager.activeSessionId) {
+      SessionManager.updateSession(SessionManager.activeSessionId, {
+        status: 'in-progress',
+        equation: latex,
+        displayText: MathUtils.latexToPlainText(latex)
+      });
+    }
+
     goToState(AppState.BOARD, {
       latex: latex,
       croppedImageDataURL: this.currentCroppedImage

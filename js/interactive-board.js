@@ -5,6 +5,20 @@ const InteractiveBoard = {
   steps: [],
   _fabTween: null,
   _animating: false,
+  _originalLatex: null,
+  _solverSteps: [],
+  _userSteps: [],
+
+  getState() {
+    if (!this.currentEquation) return null;
+    return {
+      latex: this._originalLatex,
+      solverSteps: this._solverSteps,
+      userSteps: this._userSteps,
+      currentLhs: this.currentEquation.lhs,
+      currentRhs: this.currentEquation.rhs
+    };
+  },
 
   init(data) {
     const stepsContainer = document.getElementById('steps-container');
@@ -12,44 +26,94 @@ const InteractiveBoard = {
     stepsContainer.innerHTML = '';
     zone.innerHTML = '';
 
-    this.steps = Solver.solve(data.latex);
+    this._userSteps = [];
+    this._originalLatex = data.latex || (data.boardData && data.boardData.latex);
 
-    if (!this.steps || this.steps.length === 0) {
-      const errP = document.createElement('p');
-      errP.textContent = STRINGS.errorParsing;
-      errP.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem;';
-      stepsContainer.appendChild(errP);
-      return;
-    }
+    if (data.boardData) {
+      // Restoring from saved session
+      this._solverSteps = data.boardData.solverSteps || [];
+      this._userSteps = [...(data.boardData.userSteps || [])];
+      this.steps = [...this._solverSteps, ...this._userSteps];
 
-    this.steps.forEach((step, i) => {
-      if (i > 0) {
-        const conn = document.createElement('div');
-        conn.className = 'step-connector';
-        stepsContainer.appendChild(conn);
+      if (!this.steps || this.steps.length === 0) {
+        const errP = document.createElement('p');
+        errP.textContent = STRINGS.errorParsing;
+        errP.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem;';
+        stepsContainer.appendChild(errP);
+        return;
       }
-      stepsContainer.appendChild(this.createStepCard(step, i));
-    });
 
-    gsap.from('.step-card', {
-      y: 30,
-      opacity: 0,
-      duration: 0.4,
-      stagger: 0.15,
-      ease: 'power2.out'
-    });
-    gsap.delayedCall(0.3, () => this.animateStepBadges());
+      // Render all steps
+      this.steps.forEach((step, i) => {
+        if (i > 0) {
+          const conn = document.createElement('div');
+          conn.className = 'step-connector';
+          stepsContainer.appendChild(conn);
+        }
+        stepsContainer.appendChild(this.createStepCard(step, i));
+      });
 
-    // Find last non-final step with lhs/rhs for interactive zone
-    let interactiveStep = null;
-    for (let i = this.steps.length - 1; i >= 0; i--) {
-      if (!this.steps[i].isFinal && this.steps[i].lhs && this.steps[i].rhs) {
-        interactiveStep = this.steps[i];
-        break;
+      gsap.from('.step-card', {
+        y: 30, opacity: 0, duration: 0.4, stagger: 0.15, ease: 'power2.out'
+      });
+      gsap.delayedCall(0.3, () => this.animateStepBadges());
+
+      // Restore interactive zone from saved state
+      const lastStep = this.steps[this.steps.length - 1];
+      if (lastStep && lastStep.isFinal) {
+        // Already solved — show solution message
+        const msg = document.createElement('p');
+        msg.textContent = STRINGS.solution + '!';
+        msg.style.cssText = 'text-align:center;color:var(--success);font-size:1.25rem;font-weight:600;padding:1.5rem;';
+        zone.appendChild(msg);
+      } else if (data.boardData.currentLhs && data.boardData.currentRhs) {
+        this.setupInteractiveZone({
+          lhs: data.boardData.currentLhs,
+          rhs: data.boardData.currentRhs
+        });
       }
-    }
-    if (interactiveStep) {
-      this.setupInteractiveZone(interactiveStep);
+    } else {
+      // Fresh solve
+      this._solverSteps = Solver.solve(data.latex);
+      this.steps = [...this._solverSteps];
+
+      if (!this.steps || this.steps.length === 0) {
+        const errP = document.createElement('p');
+        errP.textContent = STRINGS.errorParsing;
+        errP.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem;';
+        stepsContainer.appendChild(errP);
+        return;
+      }
+
+      this.steps.forEach((step, i) => {
+        if (i > 0) {
+          const conn = document.createElement('div');
+          conn.className = 'step-connector';
+          stepsContainer.appendChild(conn);
+        }
+        stepsContainer.appendChild(this.createStepCard(step, i));
+      });
+
+      gsap.from('.step-card', {
+        y: 30,
+        opacity: 0,
+        duration: 0.4,
+        stagger: 0.15,
+        ease: 'power2.out'
+      });
+      gsap.delayedCall(0.3, () => this.animateStepBadges());
+
+      // Find last non-final step with lhs/rhs for interactive zone
+      let interactiveStep = null;
+      for (let i = this.steps.length - 1; i >= 0; i--) {
+        if (!this.steps[i].isFinal && this.steps[i].lhs && this.steps[i].rhs) {
+          interactiveStep = this.steps[i];
+          break;
+        }
+      }
+      if (interactiveStep) {
+        this.setupInteractiveZone(interactiveStep);
+      }
     }
 
     this._fabTween = gsap.to('#btn-new', {
@@ -325,6 +389,16 @@ const InteractiveBoard = {
       };
 
       this.steps.push(newStep);
+      this._userSteps.push(newStep);
+
+      // Persist board state to session
+      if (SessionManager.activeSessionId) {
+        const updates = { boardData: this.getState() };
+        if (isFinal) {
+          updates.status = 'solved';
+        }
+        SessionManager.updateSession(SessionManager.activeSessionId, updates);
+      }
 
       const stepsContainer = document.getElementById('steps-container');
       const conn = document.createElement('div');
@@ -399,5 +473,8 @@ const InteractiveBoard = {
     this.currentEquation = null;
     this.steps = [];
     this._animating = false;
+    this._originalLatex = null;
+    this._solverSteps = [];
+    this._userSteps = [];
   }
 };
