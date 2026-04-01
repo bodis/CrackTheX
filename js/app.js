@@ -170,6 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
       I18n.setLanguage(btn.dataset.lang);
       SessionManager.renderSessionList();
       SessionManager.updateTopbarEquation();
+      // Re-render board interactive zone if we're in board state
+      if (currentState === AppState.BOARD && InteractiveBoard.currentEquation) {
+        InteractiveBoard.setupInteractiveZone(InteractiveBoard.currentEquation);
+      }
     });
   });
 

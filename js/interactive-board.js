@@ -370,12 +370,24 @@ const InteractiveBoard = {
 
   _executeAction(actionId, value) {
     const eq = this.currentEquation;
-    let newLhs, newRhs, ruleKey, ruleParam;
 
     // Convert Unicode math operators to ASCII for nerdamer
     if (value) {
       value = value.replace(/[⋅·]/g, '*').replace(/[−–]/g, '-').replace(/×/g, '*').replace(/÷/g, '/');
     }
+
+    // Expand and simplify use string-level manipulation (expandOneLayer)
+    // to avoid nerdamer auto-simplification. Other actions use nerdamer directly.
+    if (actionId === 'expand') {
+      this._doExpand(eq);
+      return;
+    }
+    if (actionId === 'simplify') {
+      this._doSimplify(eq);
+      return;
+    }
+
+    let newLhs, newRhs, ruleKey, ruleParam;
 
     try {
       switch (actionId) {
@@ -405,54 +417,106 @@ const InteractiveBoard = {
           newRhs = nerdamer('simplify((' + eq.rhs + ')/(' + value + '))');
           ruleKey = 'divideBothSides'; ruleParam = value;
           break;
-        case 'expand':
-          newLhs = nerdamer('expand(' + eq.lhs + ')');
-          newRhs = nerdamer('expand(' + eq.rhs + ')');
-          if (newLhs.text() === eq.lhs && newRhs.text() === eq.rhs) {
-            this._showActionFeedback(STRINGS.nothingToExpand);
-            return;
-          }
-          ruleKey = 'expandParens';
-          break;
-        case 'simplify':
-          newLhs = nerdamer('simplify(' + eq.lhs + ')');
-          newRhs = nerdamer('simplify(' + eq.rhs + ')');
-          if (newLhs.text() === eq.lhs && newRhs.text() === eq.rhs) {
-            this._showActionFeedback(STRINGS.nothingToSimplify);
-            return;
-          }
-          ruleKey = 'simplifyTerms';
-          break;
         default:
           return;
       }
 
       const lhsText = newLhs.text();
       const rhsText = newRhs.text();
-
-      // Detect solved state
-      const variable = MathUtils.detectVariable(eq.lhs + '=' + eq.rhs);
-      const lhsVars = nerdamer(lhsText).variables();
-      const rhsVars = nerdamer(rhsText).variables();
-      const isFinal = (lhsText === variable && rhsVars.length === 0) ||
-                      (rhsText === variable && lhsVars.length === 0);
-
-      const ruleLabel = ruleParam ? (STRINGS[ruleKey] || ruleKey) + ': ' + ruleParam : (STRINGS[ruleKey] || ruleKey);
-      const newStep = {
-        latex: MathUtils.nerdamerToLatex(newLhs) + ' = ' + MathUtils.nerdamerToLatex(newRhs),
-        rule: ruleLabel,
-        ruleKey: ruleKey,
-        ruleParam: ruleParam || null,
-        lhs: lhsText,
-        rhs: rhsText,
-        isFinal
-      };
-
-      this._addUserStep(newStep);
+      this._createActionStep(lhsText, rhsText, ruleKey, ruleParam, eq);
     } catch (err) {
       console.error('Action failed:', err);
       this._showActionFeedback(STRINGS.actionError);
     }
+  },
+
+  /** Expand one layer of innermost parentheses (does NOT combine terms) */
+  _doExpand(eq) {
+    try {
+      // Try LHS first, then RHS — expand one coeff*(group) at a time
+      const lhsResult = MathUtils.expandOneLayer(eq.lhs);
+      if (lhsResult.changed && !lhsResult.isSimplify) {
+        const ruleParam = lhsResult.description || null;
+        this._createStringStep(lhsResult.expr, eq.rhs, 'expandParens', ruleParam, eq);
+        return;
+      }
+
+      const rhsResult = MathUtils.expandOneLayer(eq.rhs);
+      if (rhsResult.changed && !rhsResult.isSimplify) {
+        const ruleParam = rhsResult.description || null;
+        this._createStringStep(eq.lhs, rhsResult.expr, 'expandParens', ruleParam, eq);
+        return;
+      }
+
+      this._showActionFeedback(STRINGS.nothingToExpand);
+    } catch (err) {
+      console.error('Expand failed:', err);
+      this._showActionFeedback(STRINGS.actionError);
+    }
+  },
+
+  /** Combine like terms respecting parentheses (does NOT open parens) */
+  _doSimplify(eq) {
+    try {
+      // Priority 1: combine like terms inside parentheses (via expandOneLayer)
+      const lhsResult = MathUtils.expandOneLayer(eq.lhs);
+      if (lhsResult.changed && lhsResult.isSimplify) {
+        this._createStringStep(lhsResult.expr, eq.rhs, 'simplifyTerms', null, eq);
+        return;
+      }
+
+      const rhsResult = MathUtils.expandOneLayer(eq.rhs);
+      if (rhsResult.changed && rhsResult.isSimplify) {
+        this._createStringStep(eq.lhs, rhsResult.expr, 'simplifyTerms', null, eq);
+        return;
+      }
+
+      // Priority 2: combine top-level terms (no parens involved)
+      const lhsSimp = nerdamer('simplify(' + eq.lhs + ')').text();
+      const rhsSimp = nerdamer('simplify(' + eq.rhs + ')').text();
+
+      if (lhsSimp !== eq.lhs || rhsSimp !== eq.rhs) {
+        this._createStringStep(lhsSimp, rhsSimp, 'simplifyTerms', null, eq);
+        return;
+      }
+
+      this._showActionFeedback(STRINGS.nothingToSimplify);
+    } catch (err) {
+      console.error('Simplify failed:', err);
+      this._showActionFeedback(STRINGS.actionError);
+    }
+  },
+
+  /** Create step from nerdamer objects (for add/subtract/multiply/divide) */
+  _createActionStep(lhsText, rhsText, ruleKey, ruleParam, eq) {
+    const variable = MathUtils.detectVariable(eq.lhs + '=' + eq.rhs);
+    const lhsVars = nerdamer(lhsText).variables();
+    const rhsVars = nerdamer(rhsText).variables();
+    const isFinal = (lhsText === variable && rhsVars.length === 0) ||
+                    (rhsText === variable && lhsVars.length === 0);
+
+    const ruleLabel = ruleParam ? (STRINGS[ruleKey] || ruleKey) + ': ' + ruleParam : (STRINGS[ruleKey] || ruleKey);
+    this._addUserStep({
+      latex: MathUtils.nerdamerToLatex(nerdamer(lhsText)) + ' = ' + MathUtils.nerdamerToLatex(nerdamer(rhsText)),
+      rule: ruleLabel, ruleKey: ruleKey, ruleParam: ruleParam || null,
+      lhs: lhsText, rhs: rhsText, isFinal
+    });
+  },
+
+  /** Create step from string expressions (for expand/simplify — avoids auto-simplification) */
+  _createStringStep(lhsStr, rhsStr, ruleKey, ruleParam, eq) {
+    const variable = MathUtils.detectVariable(eq.lhs + '=' + eq.rhs);
+    const lhsVars = nerdamer(lhsStr).variables();
+    const rhsVars = nerdamer(rhsStr).variables();
+    const isFinal = (lhsStr === variable && rhsVars.length === 0) ||
+                    (rhsStr === variable && lhsVars.length === 0);
+
+    const ruleLabel = ruleParam ? (STRINGS[ruleKey] || ruleKey) + ': ' + ruleParam : (STRINGS[ruleKey] || ruleKey);
+    this._addUserStep({
+      latex: MathUtils.nerdamerStrToDisplayLatex(lhsStr) + ' = ' + MathUtils.nerdamerStrToDisplayLatex(rhsStr),
+      rule: ruleLabel, ruleKey: ruleKey, ruleParam: ruleParam || null,
+      lhs: lhsStr, rhs: rhsStr, isFinal
+    });
   },
 
   _showRewriteInput() {
