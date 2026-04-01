@@ -107,7 +107,7 @@ function goToState(newState, data = {}) {
 document.addEventListener('DOMContentLoaded', () => {
   // Register service worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(console.error);
+    navigator.serviceWorker.register('./sw.js').catch(console.error);
   }
 
   // Ripple: event delegation on #app catches all buttons including dynamic ones

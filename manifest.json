@@ -2,7 +2,7 @@
   "name": "CrackTheX - Egyenletmegoldo",
   "short_name": "CrackTheX",
   "description": "Interaktiv matematikai egyenletmegoldo",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#080b1a",
