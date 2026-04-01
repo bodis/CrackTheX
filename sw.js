@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crackthex-v7';
+const CACHE_NAME = 'crackthex-v8';
 const SHELL_ASSETS = [
   './',
   './index.html',

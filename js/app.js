@@ -64,7 +64,7 @@ const RELEASE_NOTES = [
 // ========== THEME MANAGEMENT ==========
 const ThemeManager = {
   STORAGE_KEY: 'crackthex_theme',
-  DEFAULT_THEME: 'dark',
+  DEFAULT_THEME: 'chalkboard',
 
   init() {
     const saved = localStorage.getItem(this.STORAGE_KEY) || this.DEFAULT_THEME;
@@ -81,7 +81,7 @@ const ThemeManager = {
 
     // Update meta theme-color for mobile browser chrome
     const metaTheme = document.querySelector('meta[name="theme-color"]');
-    const themeColors = { dark: '#080b1a', whiteboard: '#f5f5f7', chalkboard: '#1a2e1a' };
+    const themeColors = { chalkboard: '#1e3a22', whiteboard: '#fafaf8', dark: '#191919' };
     if (metaTheme) metaTheme.setAttribute('content', themeColors[theme] || themeColors.dark);
 
     // Update select
