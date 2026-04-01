@@ -1,0 +1,10 @@
+{
+  "name": "crackthex",
+  "version": "1.0.0",
+  "description": "Interactive math equation solver PWA",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve -l 3000",
+    "start": "npx serve -l 3000"
+  }
+}
