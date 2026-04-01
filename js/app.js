@@ -1,3 +1,100 @@
+// ========== VERSION & RELEASE NOTES ==========
+const APP_VERSION = '0.2.0';
+
+const RELEASE_NOTES = [
+  {
+    version: '0.2.0',
+    date: '2026-04',
+    items: {
+      hu: [
+        'Színséma váltás: Tábla, Krétatábla, Sötét mód',
+        'Összes előzmény törlése gomb',
+        'Verziószám megjelenítése az oldalsávban',
+        'Változásnapló (kattints a verziószámra)',
+        'Törlés gomb jobb láthatósága'
+      ],
+      en: [
+        'Color scheme switching: Whiteboard, Chalkboard, Dark',
+        'Clear all history button',
+        'Version number display in sidebar',
+        'Release notes modal (click version number)',
+        'Improved delete button visibility'
+      ],
+      de: [
+        'Farbschema-Wechsel: Whiteboard, Kreidetafel, Dunkel',
+        'Alle löschen Schaltfläche',
+        'Versionsnummer in der Seitenleiste',
+        'Änderungsprotokoll (Versionsnummer anklicken)',
+        'Verbesserte Sichtbarkeit der Lösch-Schaltfläche'
+      ]
+    }
+  },
+  {
+    version: '0.1.0',
+    date: '2026-03',
+    items: {
+      hu: [
+        'Lépésenkénti egyenletmegoldás interaktív táblán',
+        'Kamera OCR bevitel (Mathpix)',
+        'Billentyűzetes egyenlet bevitel',
+        'Többszekciós oldalsáv localStorage tárolással',
+        'Magyar, angol, német nyelvi támogatás',
+        'PWA offline támogatással'
+      ],
+      en: [
+        'Step-by-step equation solving with interactive board',
+        'Camera OCR input (Mathpix)',
+        'Keyboard equation input',
+        'Multi-session sidebar with localStorage',
+        'Hungarian, English, German language support',
+        'PWA with offline support'
+      ],
+      de: [
+        'Schrittweise Gleichungslösung mit interaktiver Tafel',
+        'Kamera-OCR-Eingabe (Mathpix)',
+        'Tastatur-Gleichungseingabe',
+        'Multi-Session-Seitenleiste mit localStorage',
+        'Ungarische, englische, deutsche Sprachunterstützung',
+        'PWA mit Offline-Unterstützung'
+      ]
+    }
+  }
+];
+
+// ========== THEME MANAGEMENT ==========
+const ThemeManager = {
+  STORAGE_KEY: 'crackthex_theme',
+  DEFAULT_THEME: 'dark',
+
+  init() {
+    const saved = localStorage.getItem(this.STORAGE_KEY) || this.DEFAULT_THEME;
+    this.setTheme(saved, false);
+
+    document.getElementById('theme-select').addEventListener('change', (e) => {
+      this.setTheme(e.target.value, true);
+    });
+  },
+
+  setTheme(theme, animate) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(this.STORAGE_KEY, theme);
+
+    // Update meta theme-color for mobile browser chrome
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const themeColors = { dark: '#080b1a', whiteboard: '#f5f5f7', chalkboard: '#1a2e1a' };
+    if (metaTheme) metaTheme.setAttribute('content', themeColors[theme] || themeColors.dark);
+
+    // Update select
+    const select = document.getElementById('theme-select');
+    if (select) select.value = theme;
+
+    if (animate) {
+      document.body.style.transition = 'background 0.4s ease, color 0.3s ease';
+      setTimeout(() => { document.body.style.transition = ''; }, 500);
+    }
+  }
+};
+
 // ========== RIPPLE EFFECT ==========
 function rippleEffect(btn, e) {
   const rect = btn.getBoundingClientRect();
@@ -80,7 +177,14 @@ const STRINGS = {
   selectImage: 'Kép kiválasztása',
   imageNotAvailable: 'Kép nem elérhető',
   originalImageNA: 'Eredeti (kép nem elérhető)',
-  latexPlaceholder: 'LaTeX képlet...'
+  latexPlaceholder: 'LaTeX képlet...',
+  clearAll: 'Összes törlése',
+  clearAllConfirm: 'Biztosan törlöd?',
+  releaseNotes: 'Újdonságok',
+  theme: 'Téma',
+  themeWhiteboard: 'Tábla',
+  themeChalkboard: 'Krétatábla',
+  themeDark: 'Sötét'
 };
 
 // ========== STATE MACHINE ==========
@@ -147,6 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize i18n (must be first — populates STRINGS)
   I18n.init();
 
+  // Initialize theme (must be before DOM renders to avoid flash)
+  ThemeManager.init();
+
+  // Version label
+  document.getElementById('version-label').textContent = 'v' + APP_VERSION;
+
   // Register service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
@@ -178,6 +288,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+  });
+
+  // Release notes modal
+  document.getElementById('version-label').addEventListener('click', () => {
+    const modal = document.getElementById('release-notes-modal');
+    const body = document.getElementById('release-notes-body');
+    const lang = I18n._lang;
+
+    body.innerHTML = '';
+    RELEASE_NOTES.forEach(release => {
+      const section = document.createElement('div');
+      section.className = 'release-version';
+
+      const label = document.createElement('div');
+      label.className = 'release-version-label';
+      label.innerHTML = 'v' + release.version +
+        '<span class="release-version-date">' + release.date + '</span>';
+      section.appendChild(label);
+
+      const list = document.createElement('ul');
+      list.className = 'release-items';
+      const items = release.items[lang] || release.items['hu'];
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      });
+      section.appendChild(list);
+      body.appendChild(section);
+    });
+
+    modal.style.display = 'flex';
+    gsap.fromTo(modal, { opacity: 0 }, { opacity: 1, duration: 0.25 });
+    gsap.fromTo(modal.querySelector('.modal-content'),
+      { scale: 0.9, y: 20 },
+      { scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.5)' }
+    );
+  });
+
+  document.getElementById('btn-close-release-notes').addEventListener('click', () => {
+    const modal = document.getElementById('release-notes-modal');
+    gsap.to(modal, {
+      opacity: 0, duration: 0.2,
+      onComplete: () => { modal.style.display = 'none'; }
+    });
+  });
+
+  document.getElementById('release-notes-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('btn-close-release-notes').click();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('release-notes-modal');
+      if (modal.style.display !== 'none') {
+        document.getElementById('btn-close-release-notes').click();
+      }
+    }
   });
 
   // Initialize SessionManager (replaces direct goToState call)

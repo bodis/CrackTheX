@@ -149,6 +149,40 @@ const SessionManager = {
     this.renderSessionList();
   },
 
+  clearAllSessions() {
+    if (this._clearingAll) return;
+    this._clearingAll = true;
+
+    // Cancel any pending undo
+    if (this._pendingDelete) {
+      clearTimeout(this._undoTimeout);
+      this._pendingDelete = null;
+      this._pendingDeleteIndex = null;
+      this._hideUndoToast();
+    }
+
+    // Animate all cards out
+    const cards = document.querySelectorAll('.session-card');
+    cards.forEach((card, i) => {
+      gsap.to(card, {
+        x: '-100%', opacity: 0, duration: 0.25, delay: i * 0.03,
+        ease: 'power2.in'
+      });
+    });
+
+    // Clear data and create fresh session after animation
+    const totalDelay = 0.3 + cards.length * 0.03;
+    gsap.delayedCall(totalDelay, () => {
+      this.sessions = [];
+      this.activeSessionId = null;
+      this._transitioning = false;
+      this.save();
+      const session = this.createSession();
+      this.activateSession(session.id);
+      this._clearingAll = false;
+    });
+  },
+
   _hideUndoToast() {
     const toast = document.getElementById('undo-toast');
     gsap.to(toast, {
@@ -385,6 +419,25 @@ const SessionManager = {
 
     // Undo button
     document.getElementById('btn-undo').addEventListener('click', () => this.undoDelete());
+
+    // Clear all button with 2-click confirmation
+    const clearAllBtn = document.getElementById('btn-clear-all');
+    let clearAllTimeout = null;
+    clearAllBtn.addEventListener('click', () => {
+      if (clearAllBtn.classList.contains('confirming')) {
+        clearTimeout(clearAllTimeout);
+        clearAllBtn.classList.remove('confirming');
+        clearAllBtn.textContent = STRINGS.clearAll;
+        this.clearAllSessions();
+      } else {
+        clearAllBtn.classList.add('confirming');
+        clearAllBtn.textContent = STRINGS.clearAllConfirm;
+        clearAllTimeout = setTimeout(() => {
+          clearAllBtn.classList.remove('confirming');
+          clearAllBtn.textContent = STRINGS.clearAll;
+        }, 3000);
+      }
+    });
 
     // First-run hint
     if (!localStorage.getItem(this.SEEN_KEY)) {

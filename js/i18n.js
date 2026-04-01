@@ -78,13 +78,24 @@ const I18n = {
       deleted: 'Törölve.',
       undo: 'Visszavonás',
       delete_: 'Törlés',
+      clearAll: 'Összes törlése',
+      clearAllConfirm: 'Biztosan törlöd?',
       statusNew: 'Új',
       statusInProgress: 'Folyamatban',
       statusSolved: 'Megoldva',
       timeJustNow: 'most',
       timeMinutes: 'p.',
       timeHours: 'ó.',
-      timeDays: 'nap'
+      timeDays: 'nap',
+
+      // Release notes
+      releaseNotes: 'Újdonságok',
+
+      // Theme
+      theme: 'Téma',
+      themeWhiteboard: 'Tábla',
+      themeChalkboard: 'Krétatábla',
+      themeDark: 'Sötét'
     },
 
     en: {
@@ -153,13 +164,24 @@ const I18n = {
       deleted: 'Deleted.',
       undo: 'Undo',
       delete_: 'Delete',
+      clearAll: 'Clear all',
+      clearAllConfirm: 'Are you sure?',
       statusNew: 'New',
       statusInProgress: 'In progress',
       statusSolved: 'Solved',
       timeJustNow: 'now',
       timeMinutes: 'min',
       timeHours: 'h',
-      timeDays: 'days'
+      timeDays: 'days',
+
+      // Release notes
+      releaseNotes: 'What\'s new',
+
+      // Theme
+      theme: 'Theme',
+      themeWhiteboard: 'Whiteboard',
+      themeChalkboard: 'Chalkboard',
+      themeDark: 'Dark'
     },
 
     de: {
@@ -228,13 +250,24 @@ const I18n = {
       deleted: 'Gelöscht.',
       undo: 'Rückgängig',
       delete_: 'Löschen',
+      clearAll: 'Alle löschen',
+      clearAllConfirm: 'Wirklich löschen?',
       statusNew: 'Neu',
       statusInProgress: 'In Bearbeitung',
       statusSolved: 'Gelöst',
       timeJustNow: 'jetzt',
       timeMinutes: 'Min.',
       timeHours: 'Std.',
-      timeDays: 'Tage'
+      timeDays: 'Tage',
+
+      // Release notes
+      releaseNotes: 'Neuigkeiten',
+
+      // Theme
+      theme: 'Thema',
+      themeWhiteboard: 'Whiteboard',
+      themeChalkboard: 'Kreidetafel',
+      themeDark: 'Dunkel'
     }
   },
 
@@ -274,6 +307,11 @@ const I18n = {
     // Update elements with data-i18n-aria
     document.querySelectorAll('[data-i18n-aria]').forEach(el => {
       el.setAttribute('aria-label', this.t(el.dataset.i18nAria));
+    });
+
+    // Update <option> elements with data-i18n-opt
+    document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+      el.textContent = this.t(el.dataset.i18nOpt);
     });
 
     // Update language selector active state

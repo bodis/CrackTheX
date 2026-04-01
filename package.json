@@ -1,6 +1,6 @@
 {
   "name": "crackthex",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Interactive math equation solver PWA",
   "private": true,
   "scripts": {
