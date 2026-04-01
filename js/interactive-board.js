@@ -159,6 +159,56 @@ const InteractiveBoard = {
       card.style.boxShadow = '0 4px 20px var(--success-glow)';
     }
 
+    // Alternative path badge
+    if (step.alternatives && step.alternatives.length > 0) {
+      const altBtn = document.createElement('button');
+      altBtn.className = 'step-alt-badge';
+      altBtn.textContent = STRINGS.alternativePath;
+      altBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const existing = card.querySelector('.step-alt-panel');
+        if (existing) {
+          gsap.to(existing, {
+            height: 0, opacity: 0, duration: 0.25, ease: 'power2.in',
+            onComplete: () => existing.remove()
+          });
+          return;
+        }
+        const panel = document.createElement('div');
+        panel.className = 'step-alt-panel';
+        panel.style.height = '0';
+        panel.style.opacity = '0';
+        panel.style.overflow = 'hidden';
+
+        for (const alt of step.alternatives) {
+          const label = document.createElement('div');
+          label.className = 'step-alt-label';
+          label.textContent = alt.label;
+          panel.appendChild(label);
+
+          const desc = document.createElement('div');
+          desc.className = 'step-alt-desc';
+          desc.textContent = alt.description;
+          panel.appendChild(desc);
+
+          if (alt.previewLatex) {
+            const preview = document.createElement('div');
+            preview.className = 'step-alt-preview';
+            try {
+              katex.render(alt.previewLatex, preview, { throwOnError: false, displayMode: true, output: 'html' });
+            } catch {
+              preview.textContent = alt.previewLatex;
+            }
+            panel.appendChild(preview);
+          }
+        }
+
+        card.appendChild(panel);
+        gsap.to(panel, { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out' });
+      });
+      card.appendChild(altBtn);
+    }
+
     return card;
   },
 

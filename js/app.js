@@ -41,7 +41,14 @@ const STRINGS = {
   equation: 'Egyenlet',
   inputPlaceholder: 'pl. 2x + 3 = 7',
   back: 'Vissza',
-  homeTagline: 'Oldd meg az egyenletet lepesrol lepesre!'
+  homeTagline: 'Oldd meg az egyenletet lepesrol lepesre!',
+  expandInner: 'Belso zarojel felbontasa',
+  expandOuter: 'Zarojel felbontasa',
+  simplifyTerms: 'Osszevonas',
+  divideFirstHint: 'Mindket oldal oszthato',
+  alternativePath: 'Mas ut',
+  altExpandDesc: 'A zarojelek felbontasaval is megoldhato',
+  altDivideDesc: 'Eloszor osztas mindket oldalon'
 };
 
 // ========== STATE MACHINE ==========
