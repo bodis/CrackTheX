@@ -541,7 +541,7 @@ Extends the current single-variable engine:
 
 ---
 
-## Unified UI/UX
+## UI/UX Specification
 
 ### One App, All Tiers
 
@@ -551,46 +551,272 @@ Free and paid users see the same workspace shell. Differences:
 - Feature flags control enabled state per tier — no separate codebases
 - The free tier must not feel crippled — solver + practice is a genuine product
 
-### Homework Copying Mitigation
+### Landing Page
 
-CrackTheX can't prevent copying (students have ChatGPT, Photomath, etc.) but the UX encourages learning:
-- **Solver**: Steps revealed one at a time via "Next Step" button. "Show All" exists but is de-emphasized
-- **Practice mode**: No hints, no "Show All." Student uses action buttons to solve, gets pass/fail. If stuck, they switch to the Solver to learn from a similar equation, then return to practice
-- **Natural flow**: Practice → get stuck → learn from Solver → return to Practice. This IS studying.
+The product IS the landing page. No marketing-first approach.
 
-### Visual Identity
+**Above the fold (students):**
+- Equation input field, front and center, with pre-filled example: `5(2x - 3) = 25`
+- "Solve" button (primary action)
+- Below: partial solution teaser — Step 0 and Step 1 visible, rest faded with "Try it yourself — type any equation above"
+- Camera link: "Use camera" (with "Sign up free" label for anonymous users)
 
-Carry the current CrackTheX aesthetic into the Next.js rebuild:
-- Three themes: Chalkboard (default), Whiteboard, Dark
-- Glassmorphism cards, blur effects, semi-transparent backgrounds
-- KaTeX math rendering throughout
-- Framer Motion for step card animations and transitions
-- Figtree + JetBrains Mono typography
+**Below the fold (parents):**
+- "Why CrackTheX?" section
+- Competitive comparison table
+- Parent dashboard preview mockup
+- Pricing (Free + Pro)
+- Students never scroll here. Parents do.
 
-### Input Contexts
+**Mobile landing:** Simplified — equation input + "Solve" button. Solution appears after tap. No teaser.
 
-Three input methods serve different contexts:
-1. **Camera OCR** — Existing equations from homework/textbook. Requires free account. Especially valuable on mobile where typing equations is painful.
-2. **Keyboard** — Custom equations, LaTeX, plain text. Works everywhere, no account needed. Primary input on desktop.
-3. **Practice mode** — Generated equations. No input friction at all. Works everywhere.
+### Workspace Shell
+
+**Desktop (3-column):**
+- **Left**: Collapsible session sidebar. Equation list, status badges, "New equation" button. Defaults open, toggle to collapse to icons.
+- **Center**: Main content (Solver / Practice / AI Tutor). Takes full width when sidebar collapsed and AI panel not present.
+- **Right**: AI co-pilot panel (Wave 3+). "Ask AI why?" responses appear here. Empty in Wave 1-2.
+
+**Mobile (stacked):**
+- **Top**: App bar — logo, tab switcher (Solver / Practice), hamburger menu (sessions + settings)
+- **Center**: Main content, full width
+- **Bottom**: Fixed action bar in solver (thumb-zone — see Mobile section)
+- Bottom tab navigation added in Wave 3 when AI Tutor tab arrives
+
+**Settings**: Accessible from hamburger (mobile) or gear icon in sidebar (desktop). Theme switch, language switch, account. Not prominent, not buried.
+
+### Solver Tab — Detailed UX
+
+#### Equation Input Area
+
+- Input field accepting plain text (`2x+3=7`), LaTeX (`\frac{2x}{3}+1=7`), or Unicode copy-paste
+- Live KaTeX preview below the input, updating as the student types
+- Placeholder text teaches format: "Írd be az egyenletedet... pl. 2x + 3 = 7"
+- "Use camera" link (greyed out with "Sign up free" tooltip for anonymous users)
+- Multi-variable (Wave 2): "+" button adds stacked input rows. Max 3. "Solve System" button replaces "Solve"
+
+**Error handling:**
+- Double equals (`==`) → treated as single `=`
+- No equals sign → gentle message: "Add an = sign to make this an equation"
+- Unparseable input → wavy underline on the problematic part (like spell check), no scary error banners
+- Never blocks typing — errors shown on Solve attempt
+
+#### Step Cards
+
+Each solver step is a card with:
+- Step number badge (00, 01, 02...)
+- Rule description in the connector BETWEEN cards (not inside the card)
+- KaTeX-rendered equation
+- Optional alternative path panel (expandable)
+
+**Visual progress:**
+- Connector lines between cards get progressively shorter and shift color as steps advance — visual compression mirrors algebraic simplification
+- Equation font weight subtly increases toward the solution — `x = 4` feels *arrived at*, not just another line
+- Terms that moved or changed between steps briefly highlight/glow on their new position — draws attention to what changed (where the learning is)
+
+**Progressive rule language:**
+- Step 0→1: "First, let's divide both sides by 5"
+- Step 1→2: "Now add 3 to both sides"
+- Step 2→3: "Almost there — divide both sides by 2"
+- Final: "Solution found"
+- These words create a narrative journey, not a mechanical log. Translated naturally in each language (Hungarian: "Már majdnem megvagy!")
+
+**Solved state:**
+- Distinct card treatment — different border, subtle glow
+- "Verified correct ✓" line below the answer (accuracy guarantee + emotional confirmation)
+- Theme-specific celebration:
+  - Chalkboard: subtle chalk-dust particle effect around the answer
+  - Whiteboard: clean green underline
+  - Dark: soft violet glow
+- Below: "Got it? Try a similar equation yourself → Practice" (cross-promotion)
+
+**Alternative paths:**
+- When the solver detects an alternative strategy (e.g., divide-first), a subtle panel appears below the step card
+- One-line description + preview of the next step: "Another approach: Divide both sides by 5 first"
+- One tap to take the alternative, zero taps to ignore it. Gentle suggestion, not a fork.
+
+#### Action Buttons
+
+Row of buttons below the last visible step (the interactive zone):
+
+**+** | **−** | **×** | **÷** | **Expand** | **Simplify** | **I think it's...**
+
+**Smart suggestions:** Tapping an arithmetic operation (÷, +, −, ×) shows 2-3 context-aware number suggestions based on the current equation. For `5(2x - 3) = 25` with ÷ tapped: suggest **5** and **25**. One tap to use, or type a custom value. Reduces interaction from 3 steps (tap → type → confirm) to 1 step (tap → tap suggestion).
+
+**Conditional button states:**
+- **Expand**: Only active when parentheses exist in the equation. Dimmed otherwise.
+- **Simplify**: Only active when there are like terms to combine. Dimmed otherwise.
+- Dimmed buttons communicate what's possible without text.
+
+**"I think it's..." (replaces "Rewrite"):** The student proposes an equivalent equation. The app validates: "Yes, that's algebraically equivalent!" or "Not quite — try again or use the action buttons." Frames the interaction as proposing, not rewriting. More natural for younger users.
+
+**Every operation applies to BOTH sides.** The UI enforces algebraic symmetry — the student cannot make an invalid algebraic move. This teaches the rule implicitly through the interface.
+
+**Valid but inefficient moves are not errors.** Adding 3 when dividing by 5 would be smarter isn't "wrong." The equation updates validly. The student can continue or check hints.
+
+#### Hint System
+
+- **"Next step"** button: reveals one solver step at a time
+- **"Show all"** link: de-emphasized (smaller text, not a button). Reveals all remaining steps with stagger animation (200ms between each). Switches to read-only mode — interactive zone disappears.
+- After "Show all": **"Try again"** button appears at bottom to restart with the same equation
+
+### Practice Mode — Detailed UX
+
+#### Session Structure
+
+- Sessions of **5 equations** (not infinite). Creates completion feeling.
+- First 3 equations at selected difficulty, last 2 one level up. Gentle push without forcing settings changes.
+- Progress dots at top: ● ● ● ○ ○ (green for solved, orange for skipped/retry)
+
+#### Difficulty Levels
+
+Structured templates with friendly numbers (integer answers, small coefficients):
+
+| Level | Structure | Example |
+|-------|-----------|---------|
+| **Easy** | `ax + b = c` | `3x + 5 = 14` |
+| **Medium** | `a(x + b) = c` or `ax + b = cx + d` | `4(x + 2) = 20` or `3x + 7 = x + 15` |
+| **Hard** | `a(b(x + c) + d) = e` | `3(2(x + 1) - 4) = 12` |
+
+Default: Medium. One tap on "Start" begins immediately. Difficulty selector visible but not blocking.
+
+#### Interaction Flow
+
+1. Equation appears, rendered in KaTeX
+2. Same action buttons as solver: +, −, ×, ÷, Expand, Simplify (with smart suggestions)
+3. NO hint buttons. No "Next step", no "Show all"
+4. **"Check"** button: active after at least one move
+   - **Correct**: Green highlight, checkmark, "Nice! x = 4". New equation auto-generates.
+   - **Incorrect**: Gentle, specific feedback. "Not fully solved yet" or "Check step 3 — the simplification might have an error." Points at the issue without solving it.
+5. **"Show me how"** link (replaces "Skip"): Bottom drawer slides up showing solution steps in-place. No tab switch. Student reads steps, closes drawer, next equation appears. Flow preserved.
+6. **Pull-to-refresh**: Generates new equation at same difficulty. No judgment.
+
+#### Summary Screen (after 5 equations)
+
+```
+Practice Complete!
+
+● ● ● ◐ ●
+3 solved  1 skipped  1 retry
+
+Your streak: 3 days
+
+[Another round]  [Done]
+
+Skipped: 3(x + 2) = 15
+→ Open in Solver
+```
+
+- **Streak counter**: localStorage, increments daily on completing at least one set. Resets on missed day. Small, quiet — no notifications, no pressure. Students who care notice it; students who don't aren't stressed.
+- **Skipped equations**: Listed with links to open in Solver for learning.
+
+#### Solver ↔ Practice Connection
+
+The two features cross-promote naturally:
+- **Solver → Practice**: After solving, prompt: "Got it? Try a similar equation yourself → Practice"
+- **Practice → Solver**: "Show me how" opens solution in-place (bottom drawer). For deeper exploration, "Open in Solver" link in summary screen.
+- **Landing → Solver → Practice**: Solver is the hero, Practice is the CTA below ("Ready to test yourself?")
+
+### Camera OCR Flow (Wave 2)
+
+**Anonymous user:** Sees "Use camera" with "Sign up free" label → OAuth modal → camera opens immediately after signup (no detour to dashboard).
+
+**Logged-in user:**
+1. Camera view opens (full-screen overlay on mobile, modal on desktop)
+2. Live viewfinder with guide frame: "Position the equation inside the frame"
+3. Capture button → crops to frame area
+4. Cropping UI (Cropper.js v1.6.2 wrapper) → student adjusts if needed
+5. "Recognize" button → Mathpix via server API → loading state (1-2 seconds)
+6. Result: KaTeX preview + editable text field below ("Edit if the recognition isn't perfect")
+7. "Solve" button → proceeds to solver
+
+**Handwriting caveat:** Small note below capture: "Works best with printed text. Handwriting? You can always edit the result." Don't overpromise.
+
+### Sessions & Persistence
+
+**Wave 1 (no auth — localStorage):**
+- Every solved equation becomes a session
+- Session sidebar: equation text, status (New / In Progress / Solved), relative timestamp
+- Sorted by creation time (newest first)
+- Delete → 4-second undo toast. "Clear all" with confirmation.
+- Survives page refresh, not device switch
+
+**Wave 2 (with auth — cloud sync):**
+- Logged-in users: sessions sync to PostgreSQL
+- Lazy sync: save on state change + page unload
+- First login prompt: "Sync your existing sessions to your account?" — one-tap merge of localStorage sessions
+- Cloud icon on synced sessions in sidebar
+
+**Session data per equation:**
+- Original equation (as typed)
+- Current solver state (revealed steps, user steps taken)
+- Practice mode: last difficulty, session counter
+- Status: New / In Progress / Solved
+
+### Visual Identity & Themes
+
+**Chalkboard (default — the brand theme):**
+- Deep green background (`#1e3a22`)
+- Step cards: lighter green, chalk-yellow borders
+- Text: off-white (chalk)
+- Accent: chalk yellow (`#dcc050`)
+- Solved celebration: chalk-dust particle effect
+- Marketing screenshots always use this theme
+
+**Whiteboard:**
+- Off-white background (`#fafaf8`)
+- Step cards: white, subtle blue borders, light shadows
+- Text: dark gray
+- Accent: blue (`#2563eb`)
+- Solved celebration: clean green underline
+
+**Dark:**
+- Near-black background (`#191919`)
+- Step cards: dark gray, violet borders, subtle glow
+- Text: light gray
+- Accent: violet (`#a78bfa`)
+- Solved celebration: soft violet glow
+
+**All themes share:**
+- Glassmorphism cards (backdrop-filter blur + semi-transparent)
+- Smooth 0.4s transition when switching
+- Figtree (headings) + JetBrains Mono (equations) typography
+- Consistent spacing, border-radius, and component sizing
+
+### Micro-Interactions
+
+1. **Button feedback**: Subtle scale animation (press 95%, release 100%) + ripple effect on tap. Haptic vibration on mobile where available.
+2. **Step card entrance**: Slide in from below with ease-out curve. Connector line draws itself before card appears — like writing on a board.
+3. **Term-change highlighting**: When a term moves between steps, it briefly glows on its new position. Draws the eye to what changed.
+4. **Error states**: Wavy underline on unparseable input (spell-check style). Helpful coloring. No red banners, no exclamation marks.
+5. **Practice equation transitions**: On solve, card slides out. New equation slides in. Optional swipe-right gesture for next equation on mobile.
 
 ### Responsive Design
 
-Browser-first, mobile-friendly. Not a mobile-only app — students use phones, tablets, and school laptops interchangeably.
+Browser-first, mobile-friendly. Students use phones, tablets, and school laptops interchangeably.
 
-- Desktop: full workspace with sidebar visible
-- Tablet: collapsible sidebar, full workspace
-- Mobile: bottom tab navigation, drawer sidebar, optimized step cards
+**Desktop:**
+- Full workspace with sidebar visible
+- Action buttons in the interactive zone below step cards
+- Session sidebar on the left (collapsible)
 
-### Practice Mode UX
+**Tablet:**
+- Collapsible sidebar (defaults collapsed)
+- Full workspace otherwise identical to desktop
 
-- Defaults to Medium difficulty — one tap to start, no forced selection
-- Difficulty selector visible but not blocking (Easy / Medium / Hard)
-- Three difficulty levels map to different equation structures, not just different numbers:
-  - **Easy**: `ax + b = c` (single operation)
-  - **Medium**: `a(x + b) = c` or `ax + b = cx + d` (parentheses or variable on both sides)
-  - **Hard**: `a(b(x + c) + d) = e` (nested, divide-first opportunities, multiple steps)
-- No hints in practice — if stuck, switch to Solver to learn from a similar equation
+**Mobile:**
+- Fixed action bar at BOTTOM of screen (thumb zone). Step cards scroll above, buttons stay fixed. Like a chat app input bar.
+- Keyboard auto-dismisses on "Solve" tap. Live preview scrolls to stay visible above keyboard while typing.
+- Session sidebar as pull-out drawer from left (hamburger trigger)
+- Swipe-right gesture in practice mode for next equation (optional — button always works too)
+- Pull-to-refresh in practice generates new equation
+
+### Homework Copying Mitigation
+
+CrackTheX can't prevent copying (students have ChatGPT, Photomath, etc.) but the UX encourages learning:
+- **Solver**: Steps revealed one at a time. "Show All" exists but de-emphasized.
+- **Practice mode**: No hints at all. "Show me how" opens solution as a learning tool, then generates a NEW equation. Can't copy the same one.
+- **Natural flow**: Practice → stuck → "Show me how" (learn) → next equation (apply). This IS studying.
 
 ### Competitive Positioning
 
@@ -776,7 +1002,7 @@ At 10,000 users / 2% conversion (200 Pro users):
 
 ## Appendix: Team Simulation Findings
 
-This spec was refined through 4 rounds of simulated team conversation with 8 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX (Dávid), and mediator (Zsófi).
+This spec was refined through 6 rounds of simulated team conversation with 9 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX lead (Dávid), senior edtech product designer (Petra, joined Round 6), and mediator (Zsófi).
 
 ### Round 1 — Core Value & Product Shape
 1. **Buyer ≠ user**: Parents pay, students use. Two-path onboarding and parent dashboard added to MVP.
@@ -807,3 +1033,29 @@ This spec was refined through 4 rounds of simulated team conversation with 8 sta
 20. **General-purpose AI prompts for MVP**: No teacher-mandated pedagogy. Teacher-configurable teaching style is Phase 3+ when classroom features exist.
 21. **Platform name deferred**: CrackTheX is the only brand for now. Platform name decided when study-helper starts.
 22. **If it fails, investment isn't wasted**: Shared platform layer serves study-helper. Code is a portfolio asset.
+
+### Round 5 — UX Deep-Dive: Waves 1-2
+23. **Product IS the landing page**: Hero = equation input with pre-filled example + partial solution teaser. Below fold = parent content.
+24. **Action buttons enforce algebraic rules**: Every operation applies to BOTH sides. UI teaches symmetry implicitly. Invalid moves are impossible.
+25. **Valid-but-inefficient moves are not errors**: Adding 3 when dividing would be smarter isn't "wrong." Equation updates validly.
+26. **"Show all" switches to read-only**: Stagger animation, interactive zone disappears, "Try again" button offered.
+27. **Alternative paths are gentle suggestions**: One-line description + preview. One tap to take, zero to ignore.
+28. **Practice sessions are 5 equations**: Not infinite. Summary screen after each set. Creates completion feeling.
+29. **"Show me how" replaces "Skip"**: In-place bottom drawer shows solution. No tab switch. Flow preserved.
+30. **Camera flow: capture → crop → recognize → edit → solve**: Editable field is the safety net for OCR errors.
+31. **Session merge on first login**: "Sync your existing sessions to your account?" — one-tap merge of localStorage history.
+
+### Round 6 — UX Refinement (with Petra, edtech designer)
+32. **Visual progress compression**: Connector lines shorten and shift color as steps advance. Mirrors algebraic simplification.
+33. **Equation visual weight increases toward solution**: Subtle font emphasis. `x = 4` feels *arrived at*.
+34. **Progressive language in rules**: "First..." → "Now..." → "Almost there..." → "Solution found." Narrative, not log.
+35. **Term-change highlighting**: Moved terms briefly glow on their new position. Draws attention to what changed.
+36. **Theme-specific solved celebrations**: Chalk dust (chalkboard), green underline (whiteboard), violet glow (dark).
+37. **Smart suggestions on action buttons**: Context-aware number options (e.g., tap ÷ → see 5 and 25 for `5(2x-3)=25`). One-tap vs type.
+38. **Conditional button states**: Expand dimmed when no parentheses. Simplify dimmed when no like terms. Buttons communicate what's possible.
+39. **"I think it's..." replaces "Rewrite"**: Student proposes, app verifies. More natural framing.
+40. **3+2 difficulty progression in practice**: First 3 at selected level, last 2 one level up. Gentle push.
+41. **Quiet streak counter**: localStorage, daily, in summary only. No notifications. Students who care notice; others don't feel pressured.
+42. **Solver ↔ Practice cross-promotion**: Solver → "Try a similar equation" prompt. Practice → "Show me how" drawer. Natural flow.
+43. **Fixed action bar at bottom on mobile**: Thumb-zone placement. Step cards scroll above.
+44. **Micro-interactions**: Button ripple + scale, step card slide-in with connector draw, wavy underline for errors, swipe in practice.
