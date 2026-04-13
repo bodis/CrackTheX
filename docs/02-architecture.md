@@ -209,6 +209,62 @@ AI answers cross-checked against nerdamer:
 3. If mismatch: flag and fall back to deterministic
 4. Key differentiator vs ChatGPT — verified answers
 
+## v1 Solver Engine (Porting Reference)
+
+The v1 deterministic solver is ported to v2 as a client-side module. This section documents the current algorithm and nerdamer integration for porting purposes.
+
+### Solver Algorithm (7 steps)
+
+1. **Step 0**: Display original equation as-is (bypass nerdamer auto-simplification using `nerdamerStrToDisplayLatex()`)
+2. **Strategy selection**: Check if divide-first applies — pattern `N*(expr) = K` where K is divisible by N
+3. **Layered expansion**: `expandOneLayer()` finds innermost `coeff*(...)` group, expands one layer at a time (inner → simplify → outer → simplify)
+4. **Move terms**: Constants from LHS to RHS, variables from RHS to LHS. Each term movement = separate step
+5. **Simplify + divide**: Combine like terms, divide by variable coefficient
+6. **Verify**: Cross-check with `nerdamer.solve()` for correctness
+7. **Fallback**: If step-by-step fails at any point, show direct nerdamer solution
+
+### Key Conversion Functions
+
+| Function | Purpose |
+|----------|---------|
+| `latexToNerdamer(latex)` | LaTeX → nerdamer syntax (handles `\frac`, `\cdot`, `\sqrt`, Unicode) |
+| `nerdamerToLatex(nerdamerStr)` | nerdamer syntax → LaTeX for display |
+| `nerdamerStrToDisplayLatex(str)` | String-level LaTeX conversion avoiding nerdamer auto-simplification |
+| `expandOneLayer(expr)` | Finds innermost `coeff*(...)`, distributes coefficient — one layer only |
+| `parseTerms(expr)` | Splits on `+`/`-` into terms (**only safe on fully expanded expressions**) |
+| `plainMathToLatex(input)` | Plain text (e.g., `2x+3=7`) → LaTeX |
+
+### nerdamer Gotchas
+
+These quirks carry into v2 since nerdamer is kept:
+
+- **Auto-simplifies on parse**: `nerdamer("2*x + 3 - 3")` → `2*x`. Display intermediate forms via string manipulation, not nerdamer objects.
+- **Not JSON-serializable**: Always call `.text()` before storing.
+- **Implicit multiplication**: `2x` → `2*x` handled during LaTeX-to-nerdamer conversion.
+- **Unicode operators**: `⋅`, `−`, `×`, `÷` from copy-paste normalized to ASCII in conversion functions.
+- **Nested fractions**: Conversion handles up to 3 levels of nesting.
+
+### v1 Step Object Shape
+
+```javascript
+{
+  latex: "2x + 3 = 7",           // display LaTeX for KaTeX
+  rule: "subtract_both_sides",   // rule key (translated via i18n)
+  lhs: "2*x",                    // nerdamer-syntax string
+  rhs: "4",                      // nerdamer-syntax string
+  isFinal: false,                // true for solution step
+  alternatives: [{               // optional, at decision points
+    label: "expand_parentheses",
+    description: "...",
+    previewLatex: "5x + 50 = 150"
+  }]
+}
+```
+
+v2 step shape may evolve, but the core fields (latex, rule, lhs, rhs, isFinal, alternatives) carry forward.
+
+---
+
 ## Multi-Variable Solving
 
 **Deterministic (free):** 2-3 variable linear systems. Substitution/elimination step-by-step. Handles dependent (infinite solutions) and contradictory (no solution) systems.

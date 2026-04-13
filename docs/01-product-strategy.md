@@ -118,6 +118,52 @@ Flexible — no rigid parent-child hierarchy:
 
 ---
 
+## Equation Types & Scope
+
+### Currently Supported (v1 deterministic solver — carries to v2 free tier)
+
+| Type | Example |
+|------|---------|
+| Linear, one variable | `2x + 3 = 7` |
+| With parentheses | `5(x - 2) = 15` |
+| Nested parentheses | `3(2(x + 1) - 3) = 12` |
+| Deeply nested | `5(2(x - 34) - 23) + 12 = 100` |
+| Multiply-first pattern | `5(x + 10) = 150` (detects divide-first) |
+| With fractions | `(2x)/3 + 1 = 7` |
+| Trivially solved | `x = 5` |
+
+### Expanded in v2
+
+| Type | How | Tier | Phase |
+|------|-----|------|-------|
+| Quadratic (`x^2 - 4 = 0`) | AI step-by-step | Pro | Wave 3 |
+| 2-3 var linear systems | Deterministic | Free | Wave 2 |
+| 4+ var / non-linear systems | AI | Pro | Phase 2 |
+| Word problems (text → equations) | AI decomposition | Pro | Wave 3 |
+
+### Not Yet Supported (deferred)
+
+| Type | Status |
+|------|--------|
+| Inequalities | Deferred |
+| Logarithmic / trigonometric | Deferred |
+| Absolute value | Deferred |
+
+### v1 Limitations Addressed by v2
+
+| v1 Limitation | v2 Solution |
+|---------------|-------------|
+| No quadratic step-by-step | AI-powered in Pro |
+| Single variable only | 2-3 var deterministic + AI for complex |
+| No undo for user actions | Under consideration |
+| No export / share | Shareable links (Wave 2) |
+| No user accounts | OAuth + email/password, optional |
+| OCR requires exposed API keys | Server-side Mathpix proxy |
+| No backend (localStorage only) | Vercel + PostgreSQL |
+| No analytics | Progress tracking + parent dashboard |
+
+---
+
 ## Feature Map
 
 ### Solver
