@@ -562,10 +562,11 @@ The product IS the landing page. No marketing-first approach.
 - Camera link: "Use camera" (with "Sign up free" label for anonymous users)
 
 **Below the fold (parents):**
-- "Why CrackTheX?" section
-- Competitive comparison table
-- Parent dashboard preview mockup
+- "Why CrackTheX?" section with comparison table
+- Parent dashboard preview mockup (static, sample data)
 - Pricing (Free + Pro)
+- **Trust signals**: "Built by a Hungarian developer and parent", student count (when available), "Your data stays in the EU"
+- **Privacy page** link (plain-language GDPR: what's collected, what's NOT, deletion rights, EU storage, under-16 handled)
 - Students never scroll here. Parents do.
 
 **Mobile landing:** Simplified — equation input + "Solve" button. Solution appears after tap. No teaser.
@@ -600,6 +601,21 @@ The product IS the landing page. No marketing-first approach.
 - No equals sign → gentle message: "Add an = sign to make this an equation"
 - Unparseable input → wavy underline on the problematic part (like spell check), no scary error banners
 - Never blocks typing — errors shown on Solve attempt
+- Non-math input ("hello") → "This doesn't look like an equation. Try something like 2x + 3 = 7"
+
+**Edge case equations (graceful handling):**
+
+| Input | Response |
+|-------|----------|
+| `x = x` (identity) | "This is always true — any value of x is a solution." |
+| `x + 1 = x` (contradiction) | "This equation has no solution — subtracting x from both sides gives 1 = 0." |
+| `5 = 5` (no variable) | "This is true but there's no variable to solve for." |
+| `x^2 - 4 = 0` (quadratic, free tier) | Show direct answer: "x = 2 or x = -2". Below: "Want step-by-step? Upgrade to Pro — AI breaks down quadratics." (Natural upsell moment.) |
+| `sin(x) = 0.5` (unsupported) | Direct answer if nerdamer can solve. Otherwise: "Trigonometric equations aren't supported yet." |
+| Dependent system (e.g., `x+y=5`, `2x+2y=10`) | "These equations are dependent — infinitely many solutions of the form y = 5 - x." (Wave 2) |
+| Contradictory system | "This system has no solution — the equations are inconsistent." (Wave 2) |
+
+Every unsupported equation type is a natural Pro upsell opportunity. The student hits the free tier's limit exactly when they need more help.
 
 #### Step Cards
 
@@ -654,6 +670,48 @@ Row of buttons below the last visible step (the interactive zone):
 
 **Valid but inefficient moves are not errors.** Adding 3 when dividing by 5 would be smarter isn't "wrong." The equation updates validly. The student can continue or check hints.
 
+#### Concept Cards (Tappable Rule Explanations)
+
+Rule labels in the step connectors ("Divide both sides by 5") are tappable. Tapping opens a tooltip or small drawer with:
+- 2-3 sentence explanation of the concept
+- A simple example
+- Pre-written, no AI cost
+
+~10 rule types to cover:
+
+| Rule | Concept Card Summary |
+|------|---------------------|
+| Add to both sides | Preserves balance — like adding equal weight to both sides of a scale |
+| Subtract from both sides | Removing the same amount from both sides keeps them equal |
+| Multiply both sides | Scaling both sides equally maintains the equation |
+| Divide both sides | Splitting both sides into equal groups preserves equality |
+| Expand/distribute | A number outside parentheses multiplies everything inside |
+| Combine like terms | Terms with the same variable can be merged into one |
+| Move variable term | Isolate the variable on one side by moving variable terms |
+| Move constant term | Isolate the variable by moving constants to the other side |
+| Simplify a fraction | Reduce by dividing numerator and denominator by the same number |
+| Verify the answer | Substitute the solution back into the original equation to confirm |
+
+These cards become the foundation for AI Tutor consistency — when the AI explains a step, it references the same concepts.
+
+#### Inactivity Nudge
+
+If the student takes no action for 15-20 seconds on a step, a subtle suggestion fades in below the action buttons. Rule-based, no AI:
+
+| Equation State | Nudge |
+|---------------|-------|
+| Has parentheses | "Try expanding the parentheses" (arrow → Expand button) |
+| No parentheses, mixed terms | "Try moving the constant to the other side" |
+| Single variable term, coefficient ≠ 1 | "Try dividing both sides by the coefficient" |
+| Like terms on same side | "Try simplifying — combine like terms" |
+| Already simplified, variable on one side | "Almost there — try dividing" |
+
+5-6 rules cover the vast majority of cases. Addresses the "frozen student" problem — the student who entered an equation but doesn't know which button to press.
+
+#### Progressive Button Labels
+
+First-time users see full text labels beneath icons: "Add to both sides" | "Subtract from both sides" etc. After a few sessions (or manually toggled), labels collapse to compact icons only. Long-press on any button shows the full description as a tooltip. Progressive disclosure — helps beginners without cluttering the UI for experienced users.
+
 #### Hint System
 
 - **"Next step"** button: reveals one solver step at a time
@@ -672,13 +730,16 @@ Row of buttons below the last visible step (the interactive zone):
 
 Structured templates with friendly numbers (integer answers, small coefficients):
 
-| Level | Structure | Example |
-|-------|-----------|---------|
-| **Easy** | `ax + b = c` | `3x + 5 = 14` |
-| **Medium** | `a(x + b) = c` or `ax + b = cx + d` | `4(x + 2) = 20` or `3x + 7 = x + 15` |
-| **Hard** | `a(b(x + c) + d) = e` | `3(2(x + 1) - 4) = 12` |
+| Level | Structure | Example | Phase |
+|-------|-----------|---------|-------|
+| **Beginner** | `x + b = c` or `ax = c` | `x + 3 = 7` or `2x = 8` | Wave 2 |
+| **Easy** | `ax + b = c` | `3x + 5 = 14` | Wave 1 |
+| **Medium** | `a(x + b) = c` or `ax + b = cx + d` | `4(x + 2) = 20` or `3x + 7 = x + 15` | Wave 1 |
+| **Hard** | `a(b(x + c) + d) = e` | `3(2(x + 1) - 4) = 12` | Wave 1 |
 
 Default: Medium. One tap on "Start" begins immediately. Difficulty selector visible but not blocking.
+
+**Topic filters (Wave 2):** In addition to difficulty, students can filter by equation type: Parentheses / Variable on both sides / Nested / Mixed. Exposes the existing template structure through UI. Useful for test prep on specific topics ("test tomorrow on parentheses equations").
 
 #### Interaction Flow
 
@@ -738,6 +799,7 @@ The two features cross-promote naturally:
 - Every solved equation becomes a session
 - Session sidebar: equation text, status (New / In Progress / Solved), relative timestamp
 - Sorted by creation time (newest first)
+- **Starring/bookmarks**: Star a session to pin it to the top of the sidebar. For exam review. Star icon on each session card.
 - Delete → 4-second undo toast. "Clear all" with confirmation.
 - Survives page refresh, not device switch
 
@@ -746,6 +808,7 @@ The two features cross-promote naturally:
 - Lazy sync: save on state change + page unload
 - First login prompt: "Sync your existing sessions to your account?" — one-tap merge of localStorage sessions
 - Cloud icon on synced sessions in sidebar
+- **Session archiving**: Auto-archive sessions older than 60 days of inactivity (with confirmation prompt). Starred sessions exempt. Collapsed "Archived" section at bottom of sidebar. One tap to unarchive.
 
 **Session data per equation:**
 - Original equation (as typed)
@@ -847,18 +910,27 @@ The MVP is large. Rather than one big-bang launch, ship in waves (each 1-2 weeks
 **Wave 1 — Core Solver (soft launch):**
 - Next.js workspace shell — tabs, sidebar, responsive layout, 3 themes, Hungarian language
 - Solver tab — deterministic engine (1-var linear), step cards, action buttons, hints
-- Basic practice mode — 3 difficulty levels with structured templates, one-tap start
-- Landing page
+- Concept cards — tappable rule explanations (~10 rules, pre-written)
+- Inactivity nudge — rule-based suggestions after 15-20s idle (5-6 rules)
+- Progressive button labels — full text for first-time users, compact icons for returning
+- Graceful edge case handling — identity, contradiction, no-variable, unsupported types with Pro upsell
+- Basic practice mode — 3 difficulty levels (Easy/Medium/Hard) with structured templates, one-tap start, 5-equation sessions
+- Session starring/bookmarks — pin sessions to sidebar top
+- Landing page — solver as hero, trust signals, privacy page
 - No auth, no backend — pure client-side (like v1 but in Next.js)
 - Goal: validate the solver works, gather initial feedback from 10-20 people
 
 **Wave 2 — Registration & Input:**
 - Auth (OAuth + email/password)
 - Camera OCR (free with account — the registration hook)
-- Cloud session sync
-- 2-3 var linear systems in solver
+- Cloud session sync + localStorage merge prompt on first login
+- Session archiving (auto-archive old sessions, starred exempt)
+- Shareable solution links — URL-encoded equation, client-side solve, OG preview for social sharing
+- 2-3 var linear systems in solver + dependent/contradictory system detection
+- Beginner difficulty level for practice (single-step equations)
+- Topic-based practice filters (Parentheses / Both sides / Nested / Mixed)
 - English + German language support
-- Goal: test registration flow, validate camera OCR as conversion trigger
+- Goal: test registration flow, validate camera OCR as conversion trigger, enable viral sharing
 
 **Wave 3 — Monetization & AI:**
 - Stripe integration, Pro tier ($10/month), 7-day free trial
@@ -906,14 +978,30 @@ The MVP is large. Rather than one big-bang launch, ship in waves (each 1-2 weeks
 
 ### Phase 2 (Incremental Additions)
 
+**AI & Solver:**
 1. AI-powered adaptive practice — difficulty adjusts to student's weak spots, AI-generated word problems for practice, detailed AI feedback on approach (Pro)
 2. Socratic mode — AI guides instead of answers (Pro)
 3. N-variable / non-linear systems via AI (Pro)
-4. Full word problem synthesis — connected sub-problem explanation
-5. Detailed progress tracking — solve history, accuracy stats, difficulty curve visualization
-6. Credit packs — alternative to subscription for occasional users (only if usage data supports it)
-7. Master tier — higher limits, additional features (only if usage data shows demand)
-8. Annual pricing option ($80/year vs $10/month)
+4. Full word problem synthesis — connected sub-problem explanation with "why" annotations
+5. Word problem annotations — AI decomposition includes reasoning for each step, not just equations
+
+**Learning Features:**
+6. Error pattern detection — "You made sign-change errors 3 times in 15 equations." Pattern matching on action history
+7. Practice readiness signal — "16/20 correct on parentheses equations" after multiple sets. Confidence indicator for test prep
+8. Practice break suggestion — if accuracy drops over 3+ consecutive sets, suggest taking a break. Responsible design
+9. Multi-equation OCR — photograph entire homework page, recognize multiple equations, select which to solve
+10. Quick check / batch mode — paste multiple equations, get all answers at once (deterministic, no step-by-step)
+
+**Platform & Business:**
+11. Detailed progress tracking — solve history, accuracy stats, difficulty curve visualization
+12. Presentation mode — fullscreen solver, large fonts, spacebar to advance steps. For classroom use
+13. Per-language pedagogical framing — HU: "take to the other side" vs DE/EN: "subtract from both sides"
+14. Family plan — one subscription covers 2-4 children (~$15/month)
+15. Challenge sharing — "I scored 4/5 on Hard — beat me!" link opens Practice at same difficulty
+16. Dark mode suggestion at night — one-time gentle prompt after 10pm
+17. Credit packs — alternative to subscription for occasional users (only if usage data supports it)
+18. Master tier — higher limits, additional features (only if usage data shows demand)
+19. Annual pricing option ($80/year vs $10/month)
 
 ### Phase 3+ (Future — Math)
 
@@ -1002,7 +1090,7 @@ At 10,000 users / 2% conversion (200 Pro users):
 
 ## Appendix: Team Simulation Findings
 
-This spec was refined through 6 rounds of simulated team conversation with 9 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX lead (Dávid), senior edtech product designer (Petra, joined Round 6), and mediator (Zsófi).
+This spec was refined through 8 rounds of simulated team conversation with 9 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX lead (Dávid), senior edtech product designer (Petra, joined Round 6), and mediator (Zsófi). Rounds 7-8 used scenario-based role-play to discover gaps and new features.
 
 ### Round 1 — Core Value & Product Shape
 1. **Buyer ≠ user**: Parents pay, students use. Two-path onboarding and parent dashboard added to MVP.
@@ -1059,3 +1147,26 @@ This spec was refined through 6 rounds of simulated team conversation with 9 sta
 42. **Solver ↔ Practice cross-promotion**: Solver → "Try a similar equation" prompt. Practice → "Show me how" drawer. Natural flow.
 43. **Fixed action bar at bottom on mobile**: Thumb-zone placement. Step cards scroll above.
 44. **Micro-interactions**: Button ripple + scale, step card slide-in with connector draw, wavy underline for errors, swipe in practice.
+
+### Round 7 — Use Case Scenarios: Discovery
+45. **Concept cards (tappable rules) → Wave 1**: Static, pre-written explanations for ~10 rule types. Addresses the "confused in class" scenario. Foundation for AI Tutor consistency.
+46. **Session starring → Wave 1**: Pin important sessions to sidebar top. For exam review.
+47. **Shareable solution links → Wave 2**: URL-encoded equation, client-side solve. Viral mechanic. OG metadata for social preview (equation card image).
+48. **Topic-based practice filters → Wave 2**: Filter by Parentheses / Both sides / Nested. Exposes existing template structure. Matches how teachers assign tests.
+49. **Trust signals + privacy page → Wave 1**: "Built by a Hungarian parent", EU data storage, plain-language GDPR. Parents check this first.
+50. **Multi-equation OCR → Phase 2**: Photograph entire homework page, select which equations to solve.
+51. **Quick check / batch mode → Phase 2**: Paste multiple equations, get all answers. For homework verification.
+52. **Family plan → Phase 2**: One subscription, 2-4 children. Account linking supports it from Wave 2.
+53. **Word problem annotations need "why"**: Not just equations but reasoning for each decomposition step.
+
+### Round 8 — Use Case Scenarios: Edge Cases & Growth
+54. **Shared link OG preview → Wave 2**: Auto-generated equation card for WhatsApp/social previews. Curiosity drives clicks.
+55. **Session archiving → Wave 2**: Auto-archive after 60 days inactivity (with confirmation). Starred sessions exempt.
+56. **Inactivity nudge → Wave 1**: Rule-based suggestion after 15-20s idle. 5-6 rules. "Try expanding the parentheses." Unfreezes stuck students.
+57. **Progressive button labels → Wave 1**: Full text for beginners, icons for experienced. Long-press tooltip. Progressive disclosure.
+58. **Graceful edge cases → Wave 1**: Identity, contradiction, no-variable, quadratic (answer + upsell), trig ("not supported yet"). Every limit is a Pro upsell.
+59. **Beginner difficulty → Wave 2**: `x + b = c` or `ax = c`. Single-step. Extends reach to 5th-6th grade (ages 10-12).
+60. **Presentation mode → Phase 2**: Fullscreen, large fonts, spacebar advance. For teacher classroom use.
+61. **Error pattern detection → Phase 2**: "Sign-change errors 3 times in 15 equations." Pattern matching on action history.
+62. **Practice break suggestion → Phase 2**: If accuracy drops over 3+ sets, suggest a break. Responsible design. Parents love this.
+63. **Dependent/contradictory system detection → Wave 2**: "Infinitely many solutions" or "no solution" for 2-3 var systems.
