@@ -1,0 +1,310 @@
+<h2>Workspace UX — What the Student Sees</h2>
+<p class="subtitle">Unified experience across all tiers. Locked features show upgrade prompts.</p>
+
+<!-- WORKSPACE MOCKUP -->
+<div class="mockup">
+  <div class="mockup-header">CrackTheX Workspace — Free User View</div>
+  <div class="mockup-body" style="padding: 0;">
+    <!-- Top nav -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span style="font-weight: 700; font-size: 18px; color: #a78bfa;">CrackTheX</span>
+        <div style="display: flex; gap: 4px;">
+          <div style="padding: 6px 16px; background: rgba(136,100,255,0.3); border-radius: 6px; font-size: 13px; border: 1px solid rgba(136,100,255,0.5);">Solver</div>
+          <div style="padding: 6px 16px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 13px; position: relative;">
+            AI Tutor
+            <span style="position: absolute; top: -4px; right: -4px; font-size: 9px; background: #f59e0b; color: #000; padding: 1px 4px; border-radius: 4px; font-weight: 700;">PRO</span>
+          </div>
+          <div style="padding: 6px 16px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 13px; opacity: 0.4;">
+            Practice
+            <span style="font-size: 9px; opacity: 0.6; margin-left: 4px;">SOON</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; font-size: 13px;">
+        <span style="opacity: 0.5;">HU</span>
+        <span>|</span>
+        <span style="opacity: 0.5;">EN</span>
+        <span>|</span>
+        <div style="padding: 4px 12px; border: 1px solid rgba(136,100,255,0.4); border-radius: 6px; font-size: 12px; color: #a78bfa;">Sign in</div>
+      </div>
+    </div>
+
+    <!-- Content area -->
+    <div style="display: flex; min-height: 400px;">
+      <!-- Session sidebar -->
+      <div style="width: 200px; border-right: 1px solid rgba(255,255,255,0.08); padding: 16px; font-size: 13px;">
+        <div style="opacity: 0.4; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">Sessions</div>
+        <div style="padding: 8px 10px; background: rgba(136,100,255,0.15); border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #a78bfa;">
+          <div>5(2x-3) = 25</div>
+          <div style="opacity: 0.4; font-size: 11px; margin-top: 2px;">In progress</div>
+        </div>
+        <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 6px;">
+          <div>2x + 3 = 7</div>
+          <div style="opacity: 0.4; font-size: 11px; margin-top: 2px;">Solved</div>
+        </div>
+        <div style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 6px; border: 1px dashed rgba(255,255,255,0.15); text-align: center; opacity: 0.5;">
+          + New equation
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+          <div style="opacity: 0.4; font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Input</div>
+          <div style="padding: 6px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 4px; font-size: 12px;">Keyboard</div>
+          <div style="padding: 6px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; font-size: 12px; opacity: 0.5;">
+            Camera OCR
+            <span style="font-size: 9px; background: #f59e0b; color: #000; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 700;">PRO</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main solver area -->
+      <div style="flex: 1; padding: 24px;">
+        <!-- Equation input -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 15px;">5(2x - 3) = 25</div>
+            <div style="padding: 10px 20px; background: rgba(136,100,255,0.4); border-radius: 8px; font-size: 13px; font-weight: 600;">Solve</div>
+          </div>
+          <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 14px; text-align: center;">
+            5(2<i>x</i> − 3) = 25
+            <span style="opacity: 0.3; font-size: 11px; margin-left: 8px;">live preview</span>
+          </div>
+        </div>
+
+        <!-- Step cards -->
+        <div style="border-left: 2px solid rgba(136,100,255,0.2); padding-left: 20px; margin-left: 8px;">
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="background: rgba(136,100,255,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">00</span>
+              <span style="opacity: 0.5; font-size: 12px;">Original equation</span>
+            </div>
+            <div style="font-size: 16px; padding: 8px 0;">5(2<i>x</i> − 3) = 25</div>
+          </div>
+
+          <div style="opacity: 0.5; font-size: 12px; padding: 4px 12px; background: rgba(136,100,255,0.08); border-radius: 4px; margin: 8px 0 16px; display: inline-block;">Divide both sides by 5</div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="background: rgba(136,100,255,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">01</span>
+              <span style="opacity: 0.5; font-size: 12px;">Simplify</span>
+            </div>
+            <div style="font-size: 16px; padding: 8px 0;">2<i>x</i> − 3 = 5</div>
+          </div>
+
+          <div style="opacity: 0.5; font-size: 12px; padding: 4px 12px; background: rgba(136,100,255,0.08); border-radius: 4px; margin: 8px 0 16px; display: inline-block;">Add 3 to both sides</div>
+
+          <div style="margin-bottom: 16px; opacity: 0.3;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="background: rgba(136,100,255,0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">02</span>
+              <span style="opacity: 0.5; font-size: 12px;">???</span>
+            </div>
+            <div style="font-size: 16px; padding: 8px 0; filter: blur(4px);">2<i>x</i> = 8</div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap;">
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">+ Add</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">− Subtract</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">× Multiply</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">÷ Divide</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">Expand</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">Simplify</div>
+          <div style="padding: 1px; border-radius: 7px; background: linear-gradient(135deg, rgba(136,100,255,0.5), rgba(59,130,246,0.5));">
+            <div style="padding: 5px 13px; background: rgba(20,20,30,0.9); border-radius: 6px; font-size: 12px; color: #a78bfa;">
+              Ask AI why?
+              <span style="font-size: 9px; background: #f59e0b; color: #000; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 700;">PRO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hint buttons -->
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <div style="padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 13px; opacity: 0.7;">Next step</div>
+          <div style="padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 13px; opacity: 0.7;">Show all</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="height: 24px;"></div>
+
+<!-- FEATURE MAP -->
+<h2>Feature Map by Tier & Phase</h2>
+<p class="subtitle">What gets built when, and who gets access</p>
+
+<div style="overflow-x: auto;">
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.6;">
+    <thead>
+      <tr style="border-bottom: 2px solid rgba(255,255,255,0.2);">
+        <th style="text-align: left; padding: 10px 12px; opacity: 0.6;">Feature</th>
+        <th style="text-align: center; padding: 10px 12px;">Free</th>
+        <th style="text-align: center; padding: 10px 12px; color: #60a5fa;">Starter</th>
+        <th style="text-align: center; padding: 10px 12px; color: #a78bfa;">Pro</th>
+        <th style="text-align: center; padding: 10px 12px; color: #f59e0b;">Master</th>
+        <th style="text-align: center; padding: 10px 12px; opacity: 0.6;">Phase</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;" colspan="6"><strong style="opacity: 0.5; font-size: 11px; text-transform: uppercase;">Solver</strong></td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">1-var linear step-by-step</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">2-var linear system (deterministic)</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Action buttons (add/sub/mul/div/expand)</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Quadratic step-by-step (AI)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">N-variable systems (AI)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">Ph2</td>
+      </tr>
+
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;" colspan="6"><strong style="opacity: 0.5; font-size: 11px; text-transform: uppercase;">AI Tutor</strong></td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">"Ask AI why?" on steps</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">budget</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Full chat tutoring</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Error analysis ("why is this wrong?")</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Socratic mode (guided, not answers)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">Ph2</td>
+      </tr>
+
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;" colspan="6"><strong style="opacity: 0.5; font-size: 11px; text-transform: uppercase;">Input</strong></td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Keyboard + LaTeX + plain text</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Camera OCR (Mathpix)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;" colspan="6"><strong style="opacity: 0.5; font-size: 11px; text-transform: uppercase;">Platform</strong></td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Local sessions (localStorage)</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Cloud sync (account required)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Themes & languages</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Usage dashboard & token budget</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">MVP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Practice mode (exercises)</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">Ph2</td>
+      </tr>
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="padding: 8px 12px;">Notebook / scratch pad</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">Ph3</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px;">Community marketplace</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.3;">—</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px;">&#10003;</td>
+        <td style="text-align: center; padding: 8px; opacity: 0.5;">Ph3+</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,29 +1,19 @@
-# CrackTheX — Architecture & Development History
-
-## Overview
-
-CrackTheX is a Progressive Web App for Hungarian students to solve linear equations step-by-step. Users can type or photograph equations, view the solving process with detailed intermediate steps, and interactively manipulate equations by dragging terms across the equals sign.
-
-**Design language:** Dark mode with glassmorphism — animated aurora background, violet-to-cyan gradients, glass-effect cards, neon accents.
-
-**Target audience:** Hungarian secondary school students (ages 12-18).
-
----
+# CrackTheX — Technical Architecture
 
 ## Tech Stack
 
 | Layer | Technology | Version | Notes |
 |-------|-----------|---------|-------|
-| Animation | GSAP (GreenSock) | 3.13.0 | All transitions, micro-interactions |
+| Language | Vanilla ES6+ JavaScript | — | No TypeScript, no transpilation |
+| Animation | GSAP (GreenSock) | 3.13.0 | All transitions, micro-interactions, timeline-based |
 | Math rendering | KaTeX | 0.16.9 | Fast LaTeX display, `throwOnError: false` always |
-| Math engine | nerdamer | 1.1.13 | Symbolic solving (core + Algebra + Calculus + Solve) |
-| Drag-and-drop | interact.js | 1.10.27 | Touch + mouse support |
-| Image cropping | Cropper.js | 1.6.2 | **v1 only** — v2 is incompatible Web Components API |
-| Math OCR | Mathpix API | v3 | LaTeX output, requires API keys |
-| Typography | Space Grotesk + JetBrains Mono | — | Via Google Fonts |
-| PWA | Service Worker + Manifest | — | Cache-first shell, network-only APIs |
+| Math engine | nerdamer | 1.1.13 | Symbolic CAS (core + Algebra + Calculus + Solve modules) |
+| Image cropping | Cropper.js | 1.6.2 | **v1 only** — v2 is an incompatible Web Components rewrite |
+| Math OCR | Mathpix API | v3 | LaTeX output from images, requires API keys |
+| Typography | Figtree + JetBrains Mono | — | Via Google Fonts |
+| PWA | Service Worker + Manifest | — | Cache-first shell, network-only for APIs |
 
-**No build tools.** Pure HTML/CSS/JS with CDN-loaded libraries. All JS files are plain `<script>` tags loaded in dependency order.
+**No build tools.** No webpack, vite, or bundlers. All JS files are plain `<script>` tags loaded in dependency order. All libraries are loaded via CDN.
 
 ---
 
@@ -40,16 +30,16 @@ Single Page App with 3 states, managed by `goToState(newState, data)` in `app.js
 │  Home screen     │     │  OCR result or    │     │  Step cards         │
 │  - Keyboard entry│     │  keyboard input   │     │  - Step-by-step     │
 │  - Camera capture│     │  - KaTeX preview  │     │    reveal (hints)   │
-│  - File upload   │     │  - Live editing   │     │  - Drag-and-drop    │
+│  - File upload   │     │  - Live editing   │     │  - Action buttons   │
 │                  │     │  - Confidence     │     │  - Alt paths        │
 └─────────────────┘     └──────────────────┘     └─────────────────────┘
 ```
 
-Transitions are GSAP-animated (opacity + Y-translation, 0.3-0.4s).
+Transitions are GSAP-animated (opacity + Y-translation, 0.3-0.4s). Each state corresponds to a `<section>` in index.html toggled via `.active` class.
 
 ### Module Pattern
 
-Each module exports an object with `init(data)` and `cleanup()`:
+Each module exports a singleton object:
 
 ```javascript
 const ModuleName = {
@@ -59,12 +49,16 @@ const ModuleName = {
 };
 ```
 
+No framework, no imports — modules communicate through the global scope and direct function calls.
+
 ### JS Load Order (dependency chain)
 
 ```
-utils.js → api.js → solver.js → camera.js → validator.js
+i18n.js → utils.js → api.js → solver.js → camera.js → validator.js
 → interactive-board.js → sessions.js → app.js
 ```
+
+Order matters because later modules reference earlier ones (e.g., `InteractiveBoard` calls `Solver.solve()`, `sessions.js` calls `InteractiveBoard.getState()`).
 
 ### Data Flow
 
@@ -82,37 +76,49 @@ Session: boardData persisted to localStorage
 
 ---
 
-## Solver Engine
+## Solver Engine (solver.js + utils.js)
 
-### Algorithm (solver.js)
+### Algorithm
 
-1. **Step 0**: Display original equation (bypass nerdamer auto-simplification using `nerdamerStrToDisplayLatex()`)
-2. **Strategy selection**: Check if divide-first applies (`N*(expr) = K` where K is divisible by N)
+1. **Step 0**: Display original equation as-is (bypass nerdamer auto-simplification using `nerdamerStrToDisplayLatex()`)
+2. **Strategy selection**: Check if divide-first applies — pattern `N*(expr) = K` where K is divisible by N
 3. **Layered expansion**: `expandOneLayer()` finds innermost `coeff*(...)` group, expands one layer at a time (inner → simplify → outer → simplify)
-4. **Move terms**: Constants from LHS to RHS, variables from RHS to LHS (each movement = separate step)
+4. **Move terms**: Constants from LHS to RHS, variables from RHS to LHS. Each term movement = separate step
 5. **Simplify + divide**: Combine like terms, divide by variable coefficient
-6. **Verify**: Cross-check with `nerdamer.solve()`
-7. **Fallback**: If step-by-step fails, show direct solution
+6. **Verify**: Cross-check with `nerdamer.solve()` for correctness
+7. **Fallback**: If step-by-step fails at any point, show direct nerdamer solution
 
-### Key Design Decisions
+### Key Conversion Functions (utils.js)
 
-- **nerdamer auto-simplifies** on parse — intermediate forms must use string-level display (`nerdamerStrToDisplayLatex`) to avoid collapsing steps
-- **Step-by-step reveal**: Fresh solve shows only Step 0. User can drag terms manually, click "Kovetkezo lepes" for hints, or "Teljes megoldas" to see all steps
-- **Alternative paths**: When divide-first is possible, the non-chosen strategy is shown as an expandable alternative on the step card
-- **Unicode handling**: Copy-pasted `⋅`, `−`, `×`, `÷` are converted to ASCII operators
+| Function | Purpose |
+|----------|---------|
+| `latexToNerdamer(latex)` | Converts LaTeX string to nerdamer syntax (handles `\frac`, `\cdot`, `\sqrt`, Unicode operators) |
+| `nerdamerToLatex(nerdamerStr)` | Converts nerdamer syntax back to LaTeX for display |
+| `nerdamerStrToDisplayLatex(str)` | String-level LaTeX conversion that avoids nerdamer auto-simplification |
+| `expandOneLayer(expr)` | Finds innermost `coeff*(...)` group, distributes coefficient — one layer only |
+| `parseTerms(expr)` | Splits expression on `+`/`-` into individual terms (only safe on fully expanded expressions) |
+| `plainMathToLatex(input)` | Converts plain-text math (e.g., `2x+3=7`) to LaTeX |
+
+### nerdamer Gotchas
+
+- **Auto-simplifies on parse**: `nerdamer("2*x + 3 - 3")` immediately becomes `2*x`. Display intermediate forms via string manipulation, not nerdamer objects
+- **Not JSON-serializable**: Always call `.text()` before storing in localStorage
+- **Implicit multiplication**: `2x` → `2*x` handled during LaTeX-to-nerdamer conversion
+- **Unicode operators**: `⋅`, `−`, `×`, `÷` from copy-paste are normalized to ASCII in conversion functions
+- **Nested fractions**: Conversion handles up to 3 levels of nesting
 
 ### Step Object Shape
 
 ```javascript
 {
-  latex: "2x + 3 = 7",           // display LaTeX for KaTeX
-  rule: "Kivonas mindket oldalbol: 3",  // Hungarian description
-  lhs: "2*x",                    // nerdamer-syntax string
-  rhs: "4",                      // nerdamer-syntax string
-  isFinal: false,                // true for solution step
-  alternatives: [{               // optional, at decision points
-    label: "Zarojel felbontasa",
-    description: "A zarojelek felbontasaval is megoldhato",
+  latex: "2x + 3 = 7",                     // display LaTeX for KaTeX
+  rule: "subtract_both_sides",             // rule key (translated via i18n)
+  lhs: "2*x",                              // nerdamer-syntax string
+  rhs: "4",                                // nerdamer-syntax string
+  isFinal: false,                           // true for solution step
+  alternatives: [{                          // optional, at decision points
+    label: "expand_parentheses",
+    description: "...",
     previewLatex: "5x + 50 = 150"
   }]
 }
@@ -120,32 +126,51 @@ Session: boardData persisted to localStorage
 
 ---
 
-## Interactive Board
+## Interactive Board (interactive-board.js)
 
-### Drag-and-Drop (interact.js)
+### User Actions
 
-- Equation split into draggable term elements per side
-- Drop zones accept only cross-equals-sign moves
-- On valid drop: fly-across GSAP animation → sign flip → nerdamer recalculation → new step card
-- Visual feedback: cyan flash for positive, pink for negative
+The board provides action buttons instead of free-form drag-and-drop:
 
-### Step-by-Step Reveal
+| Action | What it does |
+|--------|-------------|
+| **+ / -** | Add or subtract a value from both sides |
+| **x / ÷** | Multiply or divide both sides by a value |
+| **Expand** | Distribute one layer of parentheses (mechanical, step-by-step) |
+| **Simplify** | Combine like terms on each side |
+| **Rewrite** | Free-form equation entry — validated against nerdamer solution for equivalence |
 
-- Fresh solve: only Step 0 visible + interactive drag zone + hint buttons
-- "Kovetkezo lepes" (Next step): reveals one solver step at a time
-- "Teljes megoldas" (Full solution): reveals all remaining steps
-- Session restore: all previously revealed steps shown immediately
+Actions are conditionally shown based on the current equation state (e.g., Expand only appears when parentheses exist).
+
+### Step-by-Step Reveal (Hint System)
+
+- Fresh solve: only Step 0 visible + interactive zone + hint buttons
+- "Next step" button: reveals one solver step at a time
+- "Full solution" button: reveals all remaining steps at once
+- Session restore: all previously revealed steps shown immediately (no re-animation)
+
+### Step Card Rendering
+
+Each step is a `.step-card` with:
+- Step number badge (01, 02, ...)
+- Rule description (translated string)
+- KaTeX-rendered equation
+- Optional alternative path panel (expandable)
+- Connector line to next step
 
 ---
 
 ## Session Management (sessions.js)
 
-### Storage
+### localStorage Keys
 
-localStorage with keys:
-- `crackthex_sessions` — JSON array of session objects
-- `crackthex_active_session` — active session ID
-- `crackthex_sidebar_seen` — first-run hint flag
+| Key | Content |
+|-----|---------|
+| `crackthex_sessions` | JSON array of session objects |
+| `crackthex_active_session` | Active session UUID |
+| `crackthex_sidebar_seen` | First-run hint flag |
+| `crackthex_theme` | Current theme name |
+| `crackthex_lang` | Current language code |
 
 ### Session Object
 
@@ -153,46 +178,81 @@ localStorage with keys:
 {
   id: "uuid",
   equation: "2x+3=7",
-  displayText: "2x+3=7",        // plain text for sidebar card
+  displayText: "2x+3=7",
   status: "new" | "in-progress" | "solved",
   appState: "state-scanner" | "state-validator" | "state-board",
   validatorData: { mode, latex },
-  boardData: { latex, solverSteps, userSteps, currentLhs, currentRhs },
+  boardData: { latex, solverSteps, userSteps, currentLhs, currentRhs, revealedCount },
   createdAt: timestamp,
   updatedAt: timestamp
 }
 ```
 
-### Important Rules
+### Persistence Rules
 
-- **No images stored** — too large for localStorage (100-500KB each). Lost on refresh.
-- **Sort by `createdAt`** descending — `updatedAt` would cause frustrating reshuffling
-- **Board data saved immediately** after init and on `beforeunload` — both needed
+- **No images stored** — too large for localStorage (100-500KB each)
+- **Sort by `createdAt`** descending — `updatedAt` would cause frustrating list reshuffling
+- **Dual save points**: Board data saved immediately after init AND on `beforeunload` — both needed for reliability
 - **`getState()` returns steps** even when `currentEquation` is null (fully solved state)
 - **Undo delete**: 4-second grace period with toast notification
 
 ---
 
-## UI & Styling
+## Internationalization (i18n.js)
 
-### CSS Variables (style.css)
+### Architecture
 
-```css
---bg-primary: #080b1a;          /* Deep space black */
---accent: #7c3aed;              /* Violet */
---accent-cyan: #22d3ee;         /* Bright cyan */
---gradient-main: 135deg violet → purple → cyan;
-```
+- Centralized `_translations` object with 100+ keys per language
+- Languages: Hungarian (hu, default), English (en), German (de)
+- Fallback: requested key → Hungarian
+- Persisted in localStorage (`crackthex_lang`)
+
+### DOM Binding
+
+| Attribute | Purpose |
+|-----------|---------|
+| `data-i18n` | Sets `textContent` |
+| `data-i18n-placeholder` | Sets input `placeholder` |
+| `data-i18n-aria` | Sets `aria-label` |
+| `data-i18n-opt` | Sets `<option>` text |
+
+Calling `I18n.applyTranslations()` walks the DOM and applies all translations. Called on language switch and after dynamic content creation.
+
+---
+
+## Theming (app.js + style.css)
+
+### Three Themes
+
+| Theme | Background | Accent | Feel |
+|-------|-----------|--------|------|
+| **Chalkboard** (default) | Deep green `#1e3a22` | Chalk yellow `#dcc050` | Warm, school-authentic |
+| **Whiteboard** | Off-white `#fafaf8` | Blue `#2563eb` | Clean, bright |
+| **Dark** | Near-black `#191919` | Violet `#a78bfa` | Modern, high-contrast |
+
+### Implementation
+
+- Entire palette defined in CSS custom properties on `:root`
+- Theme switch applies a new set of `--var` values via `ThemeManager.apply()`
+- Glassmorphism (backdrop-filter blur + semi-transparent backgrounds) works across all themes
+- Meta `theme-color` updated for mobile browser chrome
+- Smooth 0.4s transition on all color-dependent properties
+
+---
+
+## CSS Architecture (style.css)
 
 ### Component Classes
 
-- `.glass-card` — blur + semi-transparent background + border + shadow
-- `.glass-input` — input fields with focus glow
-- `.btn-primary` / `.btn-accent` — button variants
-- `.draggable-term` — interactive equation terms
-- `.step-card` — solution step with rule badge and KaTeX equation
-- `.step-alt-badge` / `.step-alt-panel` — alternative path UI
-- `.hint-bar` / `.btn-hint` / `.btn-show-all` — step reveal buttons
+| Class | Purpose |
+|-------|---------|
+| `.glass-card` | Blur + semi-transparent bg + border + shadow |
+| `.glass-input` | Input with focus glow |
+| `.btn-primary` / `.btn-accent` | Button variants |
+| `.step-card` | Solution step with rule badge and equation |
+| `.step-alt-badge` / `.step-alt-panel` | Alternative path UI |
+| `.hint-bar` / `.btn-hint` / `.btn-show-all` | Step reveal buttons |
+| `.entry-card` | Home screen entry option |
 
 ### Z-Index Layers
 
@@ -206,52 +266,77 @@ localStorage with keys:
 | 15 | Back buttons |
 | 10 | Controls |
 | 1 | App state sections |
-| 0 | Aurora background |
+| 0 | Background |
 
 ---
 
-## PWA & Deployment
+## PWA & Service Worker (sw.js)
 
-### Service Worker (sw.js)
+- **Cache version**: `crackthex-v8` (incremented on updates)
+- **Install**: Precache all shell assets (HTML, CSS, JS, icons) + CDN scripts
+- **Activate**: Delete old cache versions, claim clients
+- **Fetch strategy**:
+  - Network-only: Mathpix API calls, `/api/*` paths
+  - Cache-first: Everything else (shell assets, CDN libraries)
+- **Offline**: Full app shell works offline. OCR disabled (needs Mathpix API)
 
-- **Install**: Precache shell assets (local files + CDN scripts)
-- **Activate**: Delete old caches
-- **Fetch**: Cache-first for shell, network-only for Mathpix API and `/api/*`
-- Cache name: `crackthex-v5`
+### Manifest
 
-### GitHub Pages
-
-Auto-deploys via `.github/workflows/deploy.yml` on push to `main`. All paths use `./` (relative) for subpath compatibility.
-
-### Local Development
-
-```bash
-npm run dev       # Node-based (npx serve on port 3000)
-```
+- Display mode: `standalone`
+- Orientation: `portrait`
+- Start URL: `./index.html`
+- Icons: 192x192 and 512x512 PNG
 
 ---
 
-## API Configuration (api.js)
+## API Layer (api.js)
 
 Two modes:
-- **`direct`** (MVP): Calls Mathpix API directly from browser. API keys exposed — not for production.
-- **`proxy`** (production): Routes through backend at `BACKEND_URL/api/ocr`. Keys stay server-side.
 
-Placeholder endpoints for `saveEquation()` and `getHistory()` ready for future backend.
+| Mode | How it works | When to use |
+|------|-------------|-------------|
+| `direct` | Browser calls Mathpix API directly | Development / MVP (keys exposed) |
+| `proxy` | Routes through backend at `BACKEND_URL/api/ocr` | Production (keys server-side) |
+
+Placeholder stubs for `saveEquation()` and `getHistory()` exist for future backend integration.
 
 ---
 
-## Development History
+## Deployment
 
-| Phase | What was built |
-|-------|---------------|
-| Run 1 | HTML skeleton, dark theme, CSS variables, state machine, aurora background, GSAP transitions |
-| Run 2 | Camera API, Cropper.js integration, file upload fallback, stream lifecycle |
-| Run 3 | Mathpix OCR, API abstraction layer, KaTeX validator, live LaTeX editing |
-| Run 4 | nerdamer solver engine, LaTeX↔nerdamer conversion, step generation |
-| Run 5 | Interactive board, interact.js drag-and-drop, term sign-flipping, step cards |
-| Run 6 | Micro-interactions (ripple, hover, animations), PWA finalization, service worker |
-| Run 7 | Keyboard-first entry, home screen redesign, plain math input, back navigation |
-| Run 8 | Multi-session sidebar, localStorage persistence, mobile drawer, undo delete |
-| Run 9 | Gradual expansion, smart strategy (divide-first), alternative paths, step-by-step reveal |
-| Run 10 | GitHub Pages deployment, Unicode input handling, session persistence fixes |
+- **GitHub Pages** via `.github/workflows/deploy.yml` on push to `main`
+- All paths use `./` (relative) for subpath compatibility
+- Live at: `https://bodis.github.io/CrackTheX/`
+- Local dev: `npm run dev` (npx serve on port 3000)
+
+---
+
+## File Map
+
+```
+CrackTheX/
+├── index.html              # SPA entry point (3 state sections + sidebar + modal)
+├── manifest.json           # PWA manifest
+├── sw.js                   # Service worker (cache-first shell)
+├── package.json            # Dev server script only
+├── CHANGELOG.md            # Release history
+├── CLAUDE.md               # Agent instructions
+├── css/
+│   └── style.css           # All themes, glassmorphism, layouts, animations (~2000 lines)
+├── js/
+│   ├── i18n.js             # Translation strings (hu/en/de), DOM binding, language switching
+│   ├── utils.js            # LaTeX↔nerdamer conversion, term parsing, expansion logic
+│   ├── api.js              # Mathpix API abstraction (direct/proxy modes)
+│   ├── solver.js           # Step-by-step solver engine (strategies, verification, fallback)
+│   ├── camera.js           # Camera stream, Cropper.js lifecycle, file upload fallback
+│   ├── validator.js        # OCR display, KaTeX preview, keyboard/OCR mode switching
+│   ├── interactive-board.js # Step cards, action buttons, hint system, session state capture
+│   ├── sessions.js         # localStorage CRUD, sidebar UI, session switching, undo delete
+│   └── app.js              # State machine, ThemeManager, ReleaseNotes, ripple effect, init
+├── assets/icons/           # PWA icons (192, 512)
+├── docs/                   # Documentation
+│   ├── ARCHITECTURE.md     # This file
+│   └── PRODUCT.md          # Functional description & vision
+└── scripts/
+    └── generate-icons.html # Icon generation utility
+```

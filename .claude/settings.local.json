@@ -16,7 +16,19 @@
       "Bash(git commit:*)",
       "Bash(grep -E \"\\\\.\\(js|html|json|md\\)$\")",
       "Bash(node:*)",
-      "Bash(pkill -f \"python3 -m http.server 8079\")"
+      "Bash(pkill -f \"python3 -m http.server 8079\")",
+      "Bash(wc:*)",
+      "Bash(git push:*)",
+      "Bash(npx serve:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/index.html)",
+      "Bash(curl:*)",
+      "Bash(pkill -f \"serve -l 3000\")",
+      "Bash(git rm:*)",
+      "Bash(/Users/bodist/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh:*)"
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
   }
 }

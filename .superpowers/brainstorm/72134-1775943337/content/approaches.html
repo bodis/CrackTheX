@@ -1,0 +1,120 @@
+<h2>Three Product Approaches</h2>
+<p class="subtitle">How the solver, AI, and user experience relate to each other</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Solver-Centric + AI Sidebar</h3>
+      <p><strong>The current step-by-step solver is the hero.</strong> AI lives in a collapsible side panel.</p>
+      <div style="margin: 16px 0; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 14px; line-height: 1.8;">
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 2; padding: 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;">
+            <div style="opacity: 0.5; font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Main Area</div>
+            <div>Step 0: 5(2x-3) = 25</div>
+            <div style="opacity: 0.4; margin: 4px 0;">--- divide both sides by 5 ---</div>
+            <div>Step 1: 2x-3 = 5</div>
+            <div style="opacity: 0.4; margin: 4px 0;">--- add 3 to both sides ---</div>
+            <div>Step 2: 2x = 8</div>
+            <div style="margin-top: 8px;">[+ ] [- ] [x ] [Expand] [Simplify]</div>
+          </div>
+          <div style="flex: 1; padding: 12px; border: 1px solid rgba(136,100,255,0.4); border-radius: 6px; background: rgba(136,100,255,0.05);">
+            <div style="opacity: 0.5; font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">AI Panel</div>
+            <div style="font-size: 13px; opacity: 0.7;">Why did we divide by 5 first instead of expanding?</div>
+            <div style="font-size: 13px; margin-top: 8px; color: #a78bfa;">Because 25 is divisible by 5, this simplifies the problem before...</div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Evolutionary from current product</li>
+          <li>Solver works without AI (free tier natural)</li>
+          <li>Students stay in familiar step-by-step flow</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>AI feels bolted on, not integrated</li>
+          <li>Less impressive as portfolio piece</li>
+          <li>Limited room for AI-driven features</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>AI-First Tutor with Embedded Solver</h3>
+      <p><strong>Conversational AI is the primary experience.</strong> The solver is a tool the AI uses behind the scenes.</p>
+      <div style="margin: 16px 0; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 14px; line-height: 1.8;">
+        <div style="max-width: 400px; margin: 0 auto;">
+          <div style="opacity: 0.5; font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Chat Interface</div>
+          <div style="padding: 8px 12px; background: rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 6px;">Solve 5(2x-3) = 25 and explain each step</div>
+          <div style="padding: 8px 12px; background: rgba(136,100,255,0.15); border-radius: 8px; margin-bottom: 6px; color: #a78bfa;">
+            Great question! Let's break this down...<br>
+            <div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; color: #fff;">
+              5(2x-3) = 25 &rarr; 2x-3 = 5
+            </div>
+            Notice that 25 &divide; 5 = 5, so dividing first is cleaner than expanding...
+          </div>
+          <div style="padding: 8px 12px; background: rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 6px;">Wait, why can't I just expand the parentheses?</div>
+          <div style="padding: 8px 12px; background: rgba(136,100,255,0.15); border-radius: 8px; color: #a78bfa;">You absolutely can! Let me show you both ways...</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Most natural tutoring experience</li>
+          <li>AI handles any math topic, not just linear eq.</li>
+          <li>Impressive portfolio: real AI product</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Free tier is weak (no AI = no product)</li>
+          <li>Loses the interactive step-by-step UX</li>
+          <li>Just another ChatGPT wrapper?</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Math Workspace with AI Co-Pilot</h3>
+      <p><strong>A dashboard with multiple tools.</strong> Solver, AI chat, practice mode, and notebooks — each is a "workspace" the student can switch between. AI is woven through all of them.</p>
+      <div style="margin: 16px 0; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 14px; line-height: 1.8;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="padding: 6px 14px; background: rgba(136,100,255,0.3); border-radius: 6px; font-size: 12px; border: 1px solid rgba(136,100,255,0.5);">Solver</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">AI Tutor</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">Practice</div>
+          <div style="padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px;">Notebook</div>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 2; padding: 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;">
+            <div style="opacity: 0.4; font-size: 12px;">Active tool renders here — step solver, chat, exercises, or scratch pad</div>
+          </div>
+          <div style="flex: 0 0 40px; display: flex; flex-direction: column; gap: 8px; align-items: center; padding-top: 8px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(136,100,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px;" title="AI Co-Pilot">AI</div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 11px;">Hist</div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Best portfolio impact — shows product thinking</li>
+          <li>Free tier is strong (solver + limited practice)</li>
+          <li>Natural place for every future feature</li>
+          <li>AI enhances each tool contextually</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Largest build scope</li>
+          <li>Risk of shallow features if spread too thin</li>
+          <li>Dashboard UX can feel generic</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 32px; padding: 20px; background: rgba(136,100,255,0.08); border: 1px solid rgba(136,100,255,0.25); border-radius: 12px;">
+  <h3 style="margin-top: 0;">My Recommendation: C (Math Workspace)</h3>
+  <p style="margin-bottom: 0;">For a portfolio piece, C gives you the most to show. The key is <strong>phasing</strong>: MVP ships with just the Solver tab + AI co-pilot. Practice and Notebook tabs come in later phases. The workspace shell is lightweight to build but makes the product feel like a <em>platform</em>, not a single-feature tool. The free tier stays strong (solver works without AI), and every future feature has a natural home.</p>
+</div>

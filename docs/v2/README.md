@@ -23,11 +23,8 @@ CrackTheX v2 is a full-stack rebuild of the math equation solver as an AI-powere
 
 ## Related Documents
 
-- `docs/PRODUCT.md` — Product description (v1 + v2 vision summary)
-- `docs/ARCHITECTURE.md` — Technical architecture (v1)
+- `docs/PRODUCT.md` — v1 product description + pointer to v2 docs
+- `docs/ARCHITECTURE.md` — v1 technical architecture (current vanilla JS codebase)
+- `CLAUDE.md` — Agent instructions for the v1 codebase
 - `external/product-brief-study-helper-20260222.md` — study-helper product brief (future second product)
 - `external/brainstorming-session-2026-02-15.md` — study-helper brainstorming session
-
-## Original Monolithic Spec
-
-The original single-file spec is preserved at `docs/superpowers/specs/2026-04-12-crackthex-v2-platform-design.md`. These split documents are the authoritative source going forward.

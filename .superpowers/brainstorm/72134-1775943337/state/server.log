@@ -1,0 +1,4 @@
+{"type":"server-started","port":57685,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:57685","screen_dir":"/Users/bodist/work/github/CrackTheX/.superpowers/brainstorm/72134-1775943337/content","state_dir":"/Users/bodist/work/github/CrackTheX/.superpowers/brainstorm/72134-1775943337/state"}
+{"type":"screen-added","file":"/Users/bodist/work/github/CrackTheX/.superpowers/brainstorm/72134-1775943337/content/approaches.html"}
+{"type":"screen-added","file":"/Users/bodist/work/github/CrackTheX/.superpowers/brainstorm/72134-1775943337/content/workspace-ux.html"}
+{"type":"server-stopped","reason":"idle timeout"}
