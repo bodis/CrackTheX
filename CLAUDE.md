@@ -2,93 +2,46 @@
 
 ## Project Identity
 
-Hungarian math equation solver PWA. Vanilla HTML/CSS/JS, no build tools, no npm dependencies. All libraries via CDN. Dark glassmorphism theme (violet-cyan gradients, aurora background).
+Hungarian math equation solver PWA. Vanilla HTML/CSS/JS, no build tools, no npm dependencies. All libraries via CDN.
 
-## Critical Constraints
+**Design documentation**: See `docs/README.md` for the full platform design (product, architecture, UX, design system, phasing). The solver algorithm, nerdamer integration, step object shape, and conversion functions are documented in `docs/02-architecture.md` under "v1 Solver Engine (Porting Reference)".
 
-- **No build tools.** No webpack, no vite, no TypeScript compilation. All JS is plain ES6+ loaded via `<script>` tags in order.
-- **Cropper.js MUST be v1.6.2.** Version 2.x is a Web Components rewrite with an incompatible API. Never upgrade.
-- **nerdamer auto-simplifies on parse.** Calling `nerdamer(expr)` transforms the expression. Use `MathUtils.nerdamerStrToDisplayLatex()` to display intermediate forms without parsing.
-- **nerdamer objects are NOT JSON-serializable.** Always call `.text()` before storing in localStorage.
-- **No images in localStorage.** Cropped photos are too large (100-500KB). Only LaTeX strings and equation state are persisted.
+## Critical Constraints (v1 Codebase)
+
+- **No build tools.** No webpack, no vite, no TypeScript. All JS is plain ES6+ loaded via `<script>` tags in order.
+- **Cropper.js MUST be v1.6.2.** Version 2.x is an incompatible Web Components rewrite. Never upgrade.
+- **No images in localStorage.** Cropped photos too large (100-500KB). Only LaTeX strings and equation state.
 - **All UI strings are Hungarian.** Centralized in the `STRINGS` object in `app.js`.
-- **Relative paths (`./`) everywhere.** Required for GitHub Pages subpath deployment. Never use root-relative (`/`) paths.
+- **Relative paths (`./`) everywhere.** Required for GitHub Pages subpath deployment.
+- **KaTeX must always use `throwOnError: false`** to prevent crashes on malformed LaTeX.
+- **Camera uses `facingMode: { ideal: 'environment' }`** (not `exact`) for desktop compatibility.
 
-## Architecture
-
-### State Machine (3 states in app.js)
-
-```
-SCANNER (home / camera) → VALIDATOR (OCR / keyboard edit) → BOARD (solve / interact)
-```
-
-Transitions via `goToState(newState, data)` with GSAP animations. Each module has `init(data)` and `cleanup()`.
-
-### JS Module Load Order (matters!)
-
-```
-utils.js → api.js → solver.js → camera.js → validator.js → interactive-board.js → sessions.js → app.js
-```
-
-### Key Data Flow
-
-```
-User input → Validator passes LaTeX string → Board calls Solver.solve(latex)
-→ Solver: latexToNerdamer() → nerdamer operations → step array
-→ Board: renders step cards with KaTeX, sets up drag-and-drop zone
-```
-
-### Step Object Shape
-
-```javascript
-{ latex: string, rule: string, lhs: string, rhs: string, isFinal?: boolean, alternatives?: [] }
-```
-
-- `latex`: display string for KaTeX rendering
-- `lhs`/`rhs`: nerdamer-syntax strings (for calculations and session persistence)
-- `alternatives`: optional array of `{ label, description, previewLatex }` at decision points
-
-### Solver Strategy
-
-1. **Step 0**: Preserve original equation display (bypass nerdamer auto-simplify)
-2. **Strategy check**: If `N*(expr) = K` where K % N === 0 → divide-first
-3. **Layered expansion**: `expandOneLayer()` finds innermost `coeff*(...)`, expands one layer at a time
-4. **Move terms**: Constants LHS→RHS, variables RHS→LHS (each term = separate step)
-5. **Divide by coefficient**: Extract and divide
-6. **Verify**: `nerdamer.solve()` for final answer
-7. **Fallback**: If step-by-step fails, show direct solution
-
-### Session Persistence (localStorage)
-
-```javascript
-{ id, equation, displayText, status, appState, validatorData, boardData, createdAt, updatedAt }
-```
-
-- `boardData.solverSteps` + `boardData.userSteps` = full step history
-- `InteractiveBoard.getState()` returns steps even when `currentEquation` is null (solved state)
-- `captureCurrentState()` fires on session switch and `beforeunload`
-
-## File Responsibilities
+## v1 File Responsibilities
 
 | File | What it does |
 |------|-------------|
 | `utils.js` | `latexToNerdamer()`, `nerdamerToLatex()`, `nerdamerStrToDisplayLatex()`, `expandOneLayer()`, `parseTerms()`, `plainMathToLatex()` |
 | `solver.js` | `Solver.solve()`, `canDivideFirst()`, `layeredExpand()`, `solveFromExpanded()`, `fallbackSolve()` |
-| `interactive-board.js` | Step card rendering, drag-and-drop with interact.js, step-by-step reveal (`_revealNextStep`, `_revealAllSteps`), session state capture |
+| `interactive-board.js` | Step card rendering, action buttons, step-by-step reveal, session state capture |
 | `sessions.js` | localStorage CRUD, sidebar UI, session switching, undo delete, mobile drawer |
-| `camera.js` | Camera stream, Cropper.js lifecycle, file upload fallback, 3-phase flow (home/camera/cropping) |
-| `validator.js` | Mathpix OCR, KaTeX preview, keyboard/OCR mode switching, live input editing |
-| `app.js` | State machine (`goToState`), STRINGS, ripple effect, service worker registration, SessionManager init |
-| `api.js` | API abstraction layer (direct Mathpix / proxy backend), mode switching |
+| `camera.js` | Camera stream, Cropper.js lifecycle, file upload fallback |
+| `validator.js` | Mathpix OCR, KaTeX preview, keyboard/OCR mode switching |
+| `app.js` | State machine (`goToState`), STRINGS, ripple effect, service worker registration |
+| `api.js` | API abstraction (direct Mathpix / proxy backend) |
+| `i18n.js` | Translation strings (hu/en/de), DOM binding, language switching |
+
+**JS Load Order** (matters — later modules reference earlier ones):
+```
+i18n.js → utils.js → api.js → solver.js → camera.js → validator.js → interactive-board.js → sessions.js → app.js
+```
 
 ## Common Gotchas
 
 - `parseTerms()` splits on `+`/`-` without respecting parentheses — only call on fully expanded expressions.
-- Unicode math operators (`⋅`, `−`, `×`, `÷`) from copy-paste are converted to ASCII in `latexToNerdamer()` and `plainMathToLatex()`.
-- KaTeX must always use `throwOnError: false` to prevent crashes on malformed LaTeX.
-- Camera uses `facingMode: { ideal: 'environment' }` (not `exact`) for desktop compatibility.
 - Session list sorts by `createdAt` descending (stable), never by `updatedAt` (would cause reshuffling).
 - The board saves state immediately after init AND on page unload — both are needed.
+
+For nerdamer-specific gotchas (auto-simplify, JSON serialization, Unicode, etc.), see `docs/02-architecture.md` → "nerdamer Gotchas".
 
 ## When Modifying
 
