@@ -18,16 +18,18 @@ CrackTheX evolves from a vanilla JS equation solver PWA into a full-stack AI mat
 
 CrackTheX is the first product in a broader AI-powered study platform for Hungarian students. A second product — a curriculum-aligned study helper covering languages (German, English), history, and other subjects — will be built later on the same shared foundation.
 
-### Two Products, One Platform
+### Two Products, One Platform (Future)
+
+For now, only CrackTheX exists and ships under the `crackthex.app` domain. The platform name and second domain will be decided when the study-helper product starts development.
 
 ```
-crackthex.app            →  Math-first experience (solver is primary)
-[platform-name].app      →  Subject picker (math, German, English, ...)
-                              Both route to the same Next.js deployment
+crackthex.app            →  Math workspace (the only product for now)
+[platform-name].app      →  Subject picker (future, when study-helper exists)
+                              Both will route to the same Next.js deployment
 ```
 
-- **crackthex.app**: Lands directly in the math workspace. Marketed as "AI-powered math tutor." Users may never know the broader platform exists.
-- **[platform-name].app**: Lands on a subject picker or dashboard. Math, German, English, History — all accessible. Marketed as "AI study platform for Hungarian students."
+- **crackthex.app**: The math workspace. This is the only domain at launch.
+- **[platform-name].app**: Added later when the study-helper is built. Same deployment, middleware-based routing.
 - **Same deployment**: One Vercel app, two domains. Middleware reads hostname and sets `defaultSubject`. Same account, same subscription works on both.
 
 ### Monorepo Architecture
@@ -126,8 +128,8 @@ MVP launches with two visible tiers. Signing up is free and unlocks account feat
 | Tier | Price | AI Budget | Key Features |
 |------|-------|-----------|-------------|
 | **Free** (no account) | $0 | None | Deterministic solver (1-var, 2-3 var linear), basic practice mode (deterministic), localStorage sessions, all themes/languages, keyboard input |
-| **Free** (with account) | $0 | None | Everything above + cloud session sync + optional parent dashboard visibility. Not a separate named tier — just what accounts get. |
-| **Pro** | ~$10/month | ~500k tokens/month, daily caps | All AI features: AI Tutor chat, "Ask AI why?", word problem decomposition + solving, Camera OCR, quadratic solving, AI-powered adaptive practice. 7-day free trial. |
+| **Free** (with account) | $0 | None | Everything above + Camera OCR (registration hook) + cloud session sync + optional parent dashboard visibility. Not a separate named tier — just what accounts get. |
+| **Pro** | ~$10/month | ~500k tokens/month, daily caps | All AI features: AI Tutor chat, "Ask AI why?", word problem decomposition + solving, quadratic solving, AI-powered adaptive practice. 7-day free trial. |
 
 **Future tier (post-launch, if needed):**
 
@@ -156,8 +158,8 @@ MVP launches with two visible tiers. Signing up is free and unlocks account feat
 1. Land on solver — no signup required
 2. Type or paste an equation → see it solved step by step (aha moment in 15 seconds)
 3. Try practice mode → solve generated equations
-4. If they want to save work or try AI → prompt for account creation
-5. Account is free, unlocks cloud sync
+4. Registration triggers: "Use your camera to scan equations" (primary hook, especially on mobile) or "Save your work across devices" (cloud sync)
+5. Account is free, unlocks camera OCR + cloud sync
 
 **Parent path** (conversion-focused):
 1. Land on parent-oriented page: "See how your child learns math"
@@ -234,10 +236,12 @@ This dashboard is the primary tool for keeping parents paying. It answers: "Is m
 
 ### Input
 
-| Feature | Free | Pro | Phase |
-|---------|------|-----|-------|
-| Keyboard + LaTeX + plain text | Yes | Yes | MVP |
-| Camera OCR (Mathpix, server-side) | — | Yes | MVP |
+| Feature | Free (no account) | Free (with account) | Pro | Phase |
+|---------|-------------------|--------------------|----|-------|
+| Keyboard + LaTeX + plain text | Yes | Yes | Yes | MVP |
+| Camera OCR (Mathpix, server-side) | — | Yes | Yes | MVP |
+
+Camera OCR is the primary registration hook. Typing equations on mobile is painful; camera makes it effortless. Making OCR free-with-account gives students a compelling reason to sign up without being asked to pay. OCR cost per use is low (Mathpix).
 
 ### Platform
 
@@ -333,7 +337,7 @@ This dashboard is the primary tool for keeping parents paying. It answers: "Is m
 
 4. **AI goes through the backend** — All LLM calls route through `/api/ai/*` where token budgets, rate limits, and tier checks are enforced. Users never talk to an LLM directly.
 
-5. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Becomes a Pro-tier feature.
+5. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Available to all registered users (free with account) as the primary registration hook. Cost per use is low.
 
 6. **Auth is optional** — Free tier works without any account (localStorage only, like v1). Signing up unlocks cloud sync as a bonus. Required for paid tiers.
 
@@ -563,40 +567,116 @@ Carry the current CrackTheX aesthetic into the Next.js rebuild:
 - Framer Motion for step card animations and transitions
 - Figtree + JetBrains Mono typography
 
+### Input Contexts
+
+Three input methods serve different contexts:
+1. **Camera OCR** — Existing equations from homework/textbook. Requires free account. Especially valuable on mobile where typing equations is painful.
+2. **Keyboard** — Custom equations, LaTeX, plain text. Works everywhere, no account needed. Primary input on desktop.
+3. **Practice mode** — Generated equations. No input friction at all. Works everywhere.
+
 ### Responsive Design
+
+Browser-first, mobile-friendly. Not a mobile-only app — students use phones, tablets, and school laptops interchangeably.
 
 - Desktop: full workspace with sidebar visible
 - Tablet: collapsible sidebar, full workspace
 - Mobile: bottom tab navigation, drawer sidebar, optimized step cards
 
+### Practice Mode UX
+
+- Defaults to Medium difficulty — one tap to start, no forced selection
+- Difficulty selector visible but not blocking (Easy / Medium / Hard)
+- Three difficulty levels map to different equation structures, not just different numbers:
+  - **Easy**: `ax + b = c` (single operation)
+  - **Medium**: `a(x + b) = c` or `ax + b = cx + d` (parentheses or variable on both sides)
+  - **Hard**: `a(b(x + c) + d) = e` (nested, divide-first opportunities, multiple steps)
+- No hints in practice — if stuck, switch to Solver to learn from a similar equation
+
+### Competitive Positioning
+
+"Photomath shows you the answer. CrackTheX teaches you how to get there."
+
+| CrackTheX | Photomath | ChatGPT |
+|-----------|-----------|---------|
+| Interactive — try your own moves | Passive — watch steps | No structure |
+| "Ask AI why?" on any step | No explanations | Explains but hallucinates |
+| Word problem decomposition | Equations only | Can do, but unreliable |
+| Verified answers (AI + nerdamer) | Generally correct | Frequently wrong on math |
+| Parent dashboard | No visibility | No visibility |
+| Hungarian pedagogical style | English-first, translated | Generic |
+| Practice mode (solve it yourself) | No practice | No practice |
+
 ---
 
 ## Phasing
 
-### MVP (First Deploy)
+### v1 Transition
+
+The current vanilla JS app (GitHub Pages) is retired when v2 launches. No parallel maintenance of two stacks. There will be a gap while v2 is built — this is acceptable given the small current user base. v2 must have at least free-tier feature parity (solver + session history) before the old URL redirects.
+
+### MVP — Wave-Based Shipping
+
+The MVP is large. Rather than one big-bang launch, ship in waves (each 1-2 weeks). Each wave is testable independently. User feedback informs the next wave.
+
+**Wave 1 — Core Solver (soft launch):**
+- Next.js workspace shell — tabs, sidebar, responsive layout, 3 themes, Hungarian language
+- Solver tab — deterministic engine (1-var linear), step cards, action buttons, hints
+- Basic practice mode — 3 difficulty levels with structured templates, one-tap start
+- Landing page
+- No auth, no backend — pure client-side (like v1 but in Next.js)
+- Goal: validate the solver works, gather initial feedback from 10-20 people
+
+**Wave 2 — Registration & Input:**
+- Auth (OAuth + email/password)
+- Camera OCR (free with account — the registration hook)
+- Cloud session sync
+- 2-3 var linear systems in solver
+- English + German language support
+- Goal: test registration flow, validate camera OCR as conversion trigger
+
+**Wave 3 — Monetization & AI:**
+- Stripe integration, Pro tier ($10/month), 7-day free trial
+- AI Tutor chat tab
+- "Ask AI why?" on solver steps
+- Word problem decomposition + full AI solving
+- Quadratic solving via AI
+- Token budget system
+- AI math verification (cross-check against nerdamer)
+- Goal: first paying users, validate AI features
+
+**Wave 4 — Retention:**
+- Parent dashboard (minimal — activity count, accuracy trend, weekly email)
+- Account linking (parent-child, optional)
+- Two-path onboarding (student-first vs parent-first landing)
+- Usage dashboard for Pro users
+- Goal: validate parent retention, test the buyer ≠ user hypothesis
+
+### MVP Full Feature List
 
 **Workspace & Core:**
 1. Next.js workspace shell — tabs, sidebar, responsive layout, 3 themes, 3 languages
 2. Solver tab — deterministic engine (1-var + 2-3 var linear), step cards, action buttons, hints (steps revealed one at a time, "Show All" de-emphasized)
 3. AI Tutor tab — chat interface, math-specialized prompts, conversation history
-4. Practice tab (basic) — deterministic equation generation at 3 difficulty levels (easy/medium/hard), student solves with action buttons, pass/fail feedback, no hints (free tier, zero AI cost)
+4. Practice tab (basic) — deterministic equation generation at 3 structured difficulty levels, student solves with action buttons, pass/fail feedback, no hints (free tier, zero AI cost)
 
 **AI Features (Pro):**
 5. "Ask AI why?" — contextual AI on solver steps
 6. Word problem decomposition + full AI solving and synthesis
 7. Quadratic step-by-step solving via AI
-8. Camera OCR — Mathpix server-side proxy
-9. AI math verification — cross-check AI answers against nerdamer
+8. AI math verification — cross-check AI answers against nerdamer
+
+**Input:**
+9. Keyboard + LaTeX + plain text (free, no account)
+10. Camera OCR — Mathpix server-side proxy (free with account)
 
 **Platform:**
-10. Auth — OAuth + email/password, optional for free tier. Two-path onboarding (student-first vs parent-first)
-11. Account linking — parent-child optional, flexible (see Account Structure section)
-12. Parent dashboard (minimal) — equations solved, practice sessions, accuracy trend, weekly email
-13. Cloud session sync — for logged-in users
-14. Stripe subscriptions — Free + Pro ($10/month), 7-day free trial
-15. Token budget system — usage tracking, limits, dashboard
-16. Landing page — domain-aware (crackthex.app vs platform), hero, features, pricing
-17. Marketing positioning — word problems as lead feature, "verified answers" differentiator
+11. Auth — OAuth + email/password, optional for free tier. Two-path onboarding (student-first vs parent-first)
+12. Account linking — parent-child optional, flexible (see Account Structure section)
+13. Parent dashboard (minimal) — equations solved, practice sessions, accuracy trend, weekly email
+14. Cloud session sync — for logged-in users
+15. Stripe subscriptions — Free + Pro ($10/month), 7-day free trial
+16. Token budget system — usage tracking, limits, dashboard
+17. Landing page — hero, features, pricing
 
 ### Phase 2 (Incremental Additions)
 
@@ -634,6 +714,50 @@ See `external/product-brief-study-helper-20260222.md` and `external/brainstormin
 
 ---
 
+## Growth & Acquisition
+
+### First 100 Users
+
+No paid ads. Word-of-mouth only. The free tier IS the acquisition strategy.
+
+1. **Personal network** (10-20 users) — Share with friends, family, colleagues with school-age kids
+2. **Hungarian tech communities** (20-30) — Post in r/hungary, prog.hu: "I built an open-source math solver for Hungarian students"
+3. **One targeted Facebook parent group** (50-100) — After having a real testimonial from own usage. Genuine parent sharing a tool, not marketing
+4. **ProductHunt / Hacker News** — For portfolio visibility in tech communities
+
+**Prerequisite**: Use it yourself (or with own kids/family) first, get a real result, THEN share. The testimonial is the marketing.
+
+### Growth Funnel
+
+```
+Student finds CrackTheX (peer, parent, teacher)
+    ↓
+Uses free solver — aha moment (15 seconds)
+    ↓
+Wants camera input → creates free account (registration hook)
+    ↓
+Uses for months/years on free tier (age 13-15, linear equations)
+    ↓
+Math gets harder (age 16+, quadratics, word problems)
+    ↓
+Free solver can't help → tries Pro (7-day trial)
+    ↓
+Parent pays $10/month → sees dashboard → keeps paying
+```
+
+### Economics
+
+At 10,000 users / 2% conversion (200 Pro users):
+- Revenue: ~$2,000/month
+- AI costs (200 users × ~500k tokens): ~$25-50/month
+- Vercel hosting: ~$20/month
+- PostgreSQL: ~$20-50/month
+- Mathpix OCR: ~$10-20/month
+- **Total infrastructure: under $150/month. Margins are excellent.**
+- Free users cost nearly nothing (client-side solver, minimal bandwidth)
+
+---
+
 ## What This Portfolio Demonstrates
 
 > "I built a complete, production-grade AI product from concept to deployment — and designed it as a platform that scales to multiple subjects."
@@ -652,16 +776,34 @@ See `external/product-brief-study-helper-20260222.md` and `external/brainstormin
 
 ## Appendix: Team Simulation Findings
 
-This spec was refined through a simulated team conversation with 8 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX (Dávid), and mediator (Zsófi).
+This spec was refined through 4 rounds of simulated team conversation with 8 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX (Dávid), and mediator (Zsófi).
 
-### Key insights that shaped the spec:
+### Round 1 — Core Value & Product Shape
+1. **Buyer ≠ user**: Parents pay, students use. Two-path onboarding and parent dashboard added to MVP.
+2. **Word problems are the killer feature**: For struggling students AND advanced students. Lead marketing feature.
+3. **Practice mode → MVP**: Basic deterministic practice (free, no AI cost) transforms product from "calculator" to "tutor."
+4. **Two tiers, not four**: Simplified to Free + Pro. Pricing page shows two options.
+5. **Free tier must be genuinely good**: No nagware. Investment in age-based growth funnel.
 
-1. **Buyer ≠ user**: Parents pay, students use. Two-path onboarding and parent dashboard were added as MVP features.
-2. **Word problems are the killer feature**: For struggling students (can't extract equations from text) AND advanced students (saves time on practice exams). Made this a lead marketing feature.
-3. **Practice mode → MVP**: Team consensus that basic deterministic practice (free, no AI cost) transforms the product from "calculator" to "tutor." Moved from Phase 2 to MVP.
-4. **Two tiers, not four**: Simplified from Free/Starter/Pro/Master to Free + Pro. Signing up is free and unlocks account features. The pricing page shows two options.
-5. **Free tier must be genuinely good**: No nagware. The free solver + free practice is a real product, not a demo. Investment in the age-based growth funnel.
-6. **Parent linking is optional**: Flexible account structure supports involved parents, hands-off parents, and independent teens equally.
-7. **Homework copying can't be prevented**: But UX encourages learning (one-step reveal, no hints in practice mode, natural practice→solver→practice flow).
-8. **"Verified answers" is a marketing differentiator**: Cross-checking AI against nerdamer isn't just safety — it's positioning against "ChatGPT gives wrong math answers."
-9. **School/teacher features = Phase 2+**: High value but long sales cycle and GDPR complexity. Not MVP.
+### Round 2 — Onboarding & Monetization
+6. **Two-path onboarding**: Students → instant solve (no signup). Parents → demo dashboard + pricing.
+7. **Parent linking is optional**: Supports involved parents, hands-off parents, and independent teens equally.
+8. **7-day free trial**: Lower barrier than credit packs. Credit packs deferred to post-launch.
+9. **Homework copying mitigation via UX**: One-step reveal, no hints in practice, practice→solver→practice flow.
+10. **$10/month Pro pricing**: Less than one hour of tutoring (10,000 HUF). No-brainer for parents.
+
+### Round 3 — Differentiation & Growth
+11. **Differentiation vs Photomath is clear**: Interactive, AI-tutored, verified, Hungarian-first, parent visibility, word problems.
+12. **Competitive tagline**: "Photomath shows you the answer. CrackTheX teaches you how to get there."
+13. **Acquisition is word-of-mouth**: No paid ads. Students find through peers, parents through Facebook groups.
+14. **Practice mode needs structured templates**: Three levels map to different equation structures, not just bigger numbers.
+15. **Economics are favorable**: 10K users / 2% conversion = ~$2K revenue vs ~$150 infrastructure.
+
+### Round 4 — Shipping & Practical Decisions
+16. **Browser-first, mobile-friendly**: Not mobile-only. Students use phones, tablets, and laptops interchangeably.
+17. **Camera OCR is the registration hook**: Free with account. Typing equations on mobile is painful; camera makes it effortless. Best conversion trigger.
+18. **Ship in waves**: Wave 1 (solver), Wave 2 (auth + OCR), Wave 3 (AI + billing), Wave 4 (parent dashboard). Each 1-2 weeks.
+19. **No parallel v1**: Clean cut to v2. No maintaining two stacks.
+20. **General-purpose AI prompts for MVP**: No teacher-mandated pedagogy. Teacher-configurable teaching style is Phase 3+ when classroom features exist.
+21. **Platform name deferred**: CrackTheX is the only brand for now. Platform name decided when study-helper starts.
+22. **If it fails, investment isn't wasted**: Shared platform layer serves study-helper. Code is a portfolio asset.
