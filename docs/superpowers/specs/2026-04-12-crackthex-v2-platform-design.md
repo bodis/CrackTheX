@@ -12,11 +12,87 @@ CrackTheX evolves from a vanilla JS equation solver PWA into a full-stack AI mat
 
 ---
 
-## Product Architecture
+## Broader Platform Context
+
+CrackTheX is the first product in a broader AI-powered study platform for Hungarian students. A second product — a curriculum-aligned study helper covering languages (German, English), history, and other subjects — will be built later on the same shared foundation.
+
+### Two Products, One Platform
+
+```
+crackthex.app            →  Math-first experience (solver is primary)
+[platform-name].app      →  Subject picker (math, German, English, ...)
+                              Both route to the same Next.js deployment
+```
+
+- **crackthex.app**: Lands directly in the math workspace. Marketed as "AI-powered math tutor." Users may never know the broader platform exists.
+- **[platform-name].app**: Lands on a subject picker or dashboard. Math, German, English, History — all accessible. Marketed as "AI study platform for Hungarian students."
+- **Same deployment**: One Vercel app, two domains. Middleware reads hostname and sets `defaultSubject`. Same account, same subscription works on both.
+
+### Monorepo Architecture
+
+```
+project/
+├── packages/
+│   ├── platform/        # Shared: auth, billing, DB, parent dashboard, progress
+│   ├── ui/              # Shared: design system, themes, components
+│   └── ai/              # Shared: LLM proxy, token budget, rate limiting
+├── apps/
+│   ├── web/             # Next.js app (single deployment, both domains)
+│   │   ├── (marketing)/ # Landing pages (domain-aware)
+│   │   ├── (auth)/      # Login, register, OAuth
+│   │   ├── (workspace)/ # Subject workspaces
+│   │   │   ├── math/    # CrackTheX math workspace
+│   │   │   └── ...      # Future: language, history workspaces
+│   │   └── api/         # Shared API routes
+│   └── ...              # Future: mobile app, admin panel
+└── tooling/             # Shared config: eslint, tsconfig, etc.
+```
+
+### What's Shared (Platform Layer)
+
+Built once, used by all products — generalized from day one:
+
+| Component | Description |
+|-----------|-------------|
+| **Auth** | OAuth (Google, GitHub) + email/password, user profiles, roles |
+| **Billing** | Stripe subscriptions, tier management, webhooks |
+| **AI Budget** | Token tracking per user, tier-based limits, rate limiting, daily caps |
+| **LLM Proxy** | `/api/ai/*` routes — provider-agnostic, model selection per use case |
+| **Sessions** | Cloud session sync (subject-agnostic: stores JSON state per product) |
+| **Progress** | Subject-agnostic progress tracking, aggregated parent dashboard |
+| **Design System** | Shared UI components, themes, glassmorphism cards, responsive layout |
+| **i18n** | Translation infrastructure (each product adds its own strings) |
+
+### What's Product-Specific
+
+Each product owns its own domain logic:
+
+| CrackTheX (Math) | study-helper (Languages, History) |
+|-------------------|-----------------------------------|
+| nerdamer solver engine | Artifact/content system |
+| Step cards, action buttons | Flash cards, Q&A modes |
+| KaTeX rendering | Vocabulary pair rendering |
+| Word problem decomposition | Curriculum/textbook alignment |
+| Math-specific AI prompts | Language-specific AI prompts |
+| Equation OCR (Mathpix) | Content creation pipeline |
+
+### Build Order
+
+1. **Now**: Build shared platform layer + CrackTheX math workspace. Platform layer starts minimal — only what math needs. But structured as reusable packages.
+2. **Later**: Build study-helper on the same foundation. Auth, billing, AI budget, parent dashboard — already done. Only subject-specific features needed.
+3. **Eventually**: Both products accessible from either domain. One subscription unlocks AI across all subjects.
+
+### This Spec's Focus
+
+**This document focuses on the CrackTheX math workspace.** The shared platform components are designed with generalization in mind, but only built to the depth that the math product requires for its MVP. study-helper will extend them when the time comes.
+
+---
+
+## Product Architecture: CrackTheX Math Workspace
 
 ### Approach: Math Workspace with AI Co-Pilot
 
-A unified Next.js application with a workspace layout. Multiple tools (tabs) share a common shell. AI is woven through the tools contextually, not isolated in a single feature.
+A workspace layout within the broader platform. Multiple tools (tabs) share a common shell. AI is woven through the tools contextually, not isolated in a single feature.
 
 For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat tab handles everything conversationally. For deeper work (step-by-step solving, interactive manipulation), the Solver tab provides the structured experience with AI available as a co-pilot.
 
@@ -117,34 +193,45 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 ### System Diagram
 
 ```
-┌─────────────────────────────────────────────┐
-│              Vercel Platform                 │
-│                                              │
-│  ┌──────────────────────────────────────┐   │
-│  │         Next.js App (Frontend)        │   │
-│  │                                        │   │
-│  │  Landing Page / Marketing              │   │
-│  │  Auth (login/register/OAuth)           │   │
-│  │  Workspace (Solver, AI Tutor, ...)     │   │
-│  └──────────────────────────────────────┘   │
-│                                              │
-│  ┌──────────────────────────────────────┐   │
-│  │      API Routes (Backend)             │   │
-│  │                                        │   │
-│  │  /api/auth/*     - Auth endpoints      │   │
-│  │  /api/ai/*       - LLM proxy + budget  │   │
-│  │  /api/sessions/* - CRUD + sync         │   │
-│  │  /api/ocr/*      - Mathpix proxy       │   │
-│  │  /api/billing/*  - Stripe webhooks     │   │
-│  └──────────────────────────────────────┘   │
-│                                              │
-│  ┌──────────────────────────────────────┐   │
-│  │         PostgreSQL (Vercel Postgres)   │   │
-│  │                                        │   │
-│  │  users, sessions, token_usage,         │   │
-│  │  subscriptions, equations, chat_history │   │
-│  └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
+              crackthex.app          [platform].app
+                    │                       │
+                    ▼                       ▼
+┌─────────────────────────────────────────────────────┐
+│              Vercel Platform (single deployment)     │
+│                                                       │
+│  ┌───────────────────────────────────────────────┐   │
+│  │  Middleware: hostname → defaultSubject routing  │   │
+│  └───────────────────────────────────────────────┘   │
+│                                                       │
+│  ┌───────────────────────────────────────────────┐   │
+│  │         Next.js App (apps/web)                  │   │
+│  │                                                  │   │
+│  │  (marketing)/  - Landing pages (domain-aware)    │   │
+│  │  (auth)/       - Login, register, OAuth          │   │
+│  │  (workspace)/                                    │   │
+│  │    ├── math/   - CrackTheX solver + tutor        │   │
+│  │    └── .../    - Future subject workspaces        │   │
+│  └───────────────────────────────────────────────┘   │
+│                                                       │
+│  ┌───────────────────────────────────────────────┐   │
+│  │  API Routes (packages/platform + packages/ai)   │   │
+│  │                                                  │   │
+│  │  /api/auth/*     - Auth (shared)                 │   │
+│  │  /api/ai/*       - LLM proxy + budget (shared)   │   │
+│  │  /api/sessions/* - CRUD + sync (shared)          │   │
+│  │  /api/billing/*  - Stripe webhooks (shared)      │   │
+│  │  /api/math/ocr/* - Mathpix proxy (math-specific) │   │
+│  └───────────────────────────────────────────────┘   │
+│                                                       │
+│  ┌───────────────────────────────────────────────┐   │
+│  │         PostgreSQL (Vercel Postgres)             │   │
+│  │                                                  │   │
+│  │  Shared: users, subscriptions, token_usage,      │   │
+│  │          progress                                 │   │
+│  │  Math:   math_sessions, equations, chat_history   │   │
+│  │  Future: artifacts, lessons, test_results         │   │
+│  └───────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
           │                    │
           ▼                    ▼
    Anthropic API          Mathpix API
@@ -170,78 +257,134 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 
 ### Key Architectural Decisions
 
-1. **Solver runs client-side** — The nerdamer-based deterministic solver is ported as a Next.js client-side utility module. Zero backend cost, works instantly, works offline for free-tier users.
+1. **Monorepo with shared platform layer** — Turborepo monorepo separates shared concerns (auth, billing, AI, UI) into reusable packages. Math-specific logic lives in the app. This enables building the study-helper later without rebuilding infrastructure.
 
-2. **AI goes through the backend** — All LLM calls route through `/api/ai/*` where token budgets, rate limits, and tier checks are enforced. Users never talk to an LLM directly.
+2. **Two domains, one deployment** — `crackthex.app` and `[platform].app` both point to the same Vercel deployment. Middleware routes based on hostname. One account, one subscription works everywhere.
 
-3. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Becomes a paid-tier feature (Starter+).
+3. **Solver runs client-side** — The nerdamer-based deterministic solver is ported as a Next.js client-side utility module. Zero backend cost, works instantly, works offline for free-tier users.
 
-4. **Auth is optional** — Free tier works without any account (localStorage only, like v1). Signing up unlocks cloud sync as a bonus. Required for paid tiers.
+4. **AI goes through the backend** — All LLM calls route through `/api/ai/*` where token budgets, rate limits, and tier checks are enforced. Users never talk to an LLM directly.
 
-5. **Unified app for all tiers** — One Next.js app, one codebase, one deployment. Feature flags control what's visible/enabled per tier. Same UI shell for everyone.
+5. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Becomes a paid-tier feature (Starter+).
 
-6. **localStorage persists for free** — Even logged-in users have localStorage as a fallback. Cloud sync supplements but doesn't replace local persistence.
+6. **Auth is optional** — Free tier works without any account (localStorage only, like v1). Signing up unlocks cloud sync as a bonus. Required for paid tiers.
 
-### Database Schema (Core Tables)
+7. **Unified app for all tiers** — One Next.js app, one codebase, one deployment. Feature flags control what's visible/enabled per tier. Same UI shell for everyone.
+
+8. **localStorage persists for free** — Even logged-in users have localStorage as a fallback. Cloud sync supplements but doesn't replace local persistence.
+
+9. **Subject-agnostic shared tables** — DB schema separates shared tables (users, subscriptions, token_usage, progress) from product-specific tables (math_sessions, equations). New products add their own tables without touching the shared schema.
+
+### Database Schema
+
+**Shared tables (packages/platform):**
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth profile, current tier, preferences (theme, language) |
 | `subscriptions` | Stripe subscription state, tier, billing cycle |
-| `token_usage` | Daily/monthly AI token tracking per user |
-| `sessions` | Cloud-synced equation sessions |
+| `token_usage` | Daily/monthly AI token tracking per user (subject-agnostic) |
+| `progress` | Subject-agnostic progress records (subject, score, timestamp) |
+
+**Math-specific tables (apps/web, math context):**
+
+| Table | Purpose |
+|-------|---------|
+| `math_sessions` | Cloud-synced equation sessions (solver state, steps) |
 | `equations` | Solved equations with steps (caching, analytics) |
-| `chat_history` | AI Tutor conversation threads per user |
+| `math_chat_history` | Math AI Tutor conversation threads per user |
 
-### Project Structure
+**Future tables (study-helper, added later):**
+
+| Table | Purpose |
+|-------|---------|
+| `artifacts` | Curriculum-aligned lesson content (vocab, grammar, terms) |
+| `lessons` | Lesson units with structured content |
+| `test_results` | Student test scores and answer history |
+
+### Project Structure (Monorepo)
 
 ```
-crackthex/
-├── app/
-│   ├── (marketing)/            # Landing, pricing, about
-│   │   ├── page.tsx
-│   │   └── pricing/page.tsx
-│   ├── (auth)/                 # Login, register, OAuth
-│   │   ├── login/page.tsx
-│   │   └── register/page.tsx
-│   ├── (workspace)/            # Main app (workspace layout)
-│   │   ├── layout.tsx          # Shell: tabs, sidebar, nav
-│   │   ├── solver/page.tsx
-│   │   ├── tutor/page.tsx
-│   │   ├── practice/page.tsx   # Phase 2
-│   │   └── notebook/page.tsx   # Phase 3
-│   └── api/
-│       ├── ai/
-│       │   ├── explain/route.ts
-│       │   ├── chat/route.ts
-│       │   └── decompose/route.ts
-│       ├── ocr/route.ts
-│       ├── sessions/route.ts
-│       └── billing/route.ts
-├── lib/
-│   ├── solver/
-│   │   ├── engine.ts           # Core solve logic (ported)
-│   │   ├── utils.ts            # LaTeX/nerdamer conversions
-│   │   ├── multi-var.ts        # 2-3 var linear systems
-│   │   └── types.ts
-│   ├── ai/
-│   │   ├── prompts.ts          # System prompts per mode
-│   │   ├── budget.ts           # Token tracking & enforcement
-│   │   └── verify.ts           # Cross-check AI vs nerdamer
-│   ├── db/
-│   │   ├── schema.ts           # Drizzle schema
-│   │   └── queries.ts
-│   └── i18n/                   # hu, en, de translations
-├── components/
-│   ├── workspace/              # Tabs, sidebar, navigation
-│   ├── solver/                 # Step cards, actions, hints
-│   ├── tutor/                  # Chat interface
-│   ├── shared/                 # Glass cards, buttons, inputs
-│   └── marketing/              # Landing page sections
-└── public/
-    ├── icons/
-    └── manifest.json
+study-platform/                     # Monorepo root (Turborepo)
+├── packages/
+│   ├── platform/                   # Shared platform layer
+│   │   ├── auth/                   # Auth utilities, middleware, session
+│   │   ├── billing/                # Stripe integration, tier checks
+│   │   ├── db/
+│   │   │   ├── schema.ts           # Drizzle schema (shared tables)
+│   │   │   └── queries.ts          # Common queries
+│   │   ├── progress/               # Subject-agnostic progress tracking
+│   │   └── sessions/               # Cloud session sync (generic JSON state)
+│   ├── ai/                         # Shared AI layer
+│   │   ├── proxy.ts                # LLM provider abstraction
+│   │   ├── budget.ts               # Token tracking & enforcement
+│   │   └── rate-limit.ts           # Per-user rate limiting
+│   └── ui/                         # Shared design system
+│       ├── components/             # Glass cards, buttons, inputs, layout
+│       ├── themes/                 # Chalkboard, whiteboard, dark
+│       └── i18n/                   # Translation infrastructure
+│
+├── apps/
+│   └── web/                        # Next.js app (single deployment)
+│       ├── app/
+│       │   ├── (marketing)/        # Landing pages (domain-aware)
+│       │   │   ├── page.tsx        # Hero + features (adapts to domain)
+│       │   │   └── pricing/page.tsx
+│       │   ├── (auth)/             # Login, register, OAuth
+│       │   │   ├── login/page.tsx
+│       │   │   └── register/page.tsx
+│       │   ├── (workspace)/        # Workspace shell
+│       │   │   ├── layout.tsx      # Tabs, sidebar, nav (subject-aware)
+│       │   │   ├── math/           # CrackTheX math workspace
+│       │   │   │   ├── solver/page.tsx
+│       │   │   │   ├── tutor/page.tsx
+│       │   │   │   ├── practice/page.tsx   # Phase 2
+│       │   │   │   └── notebook/page.tsx   # Phase 3
+│       │   │   └── ...             # Future subject workspaces
+│       │   └── api/
+│       │       ├── auth/[...]/route.ts     # Uses packages/platform
+│       │       ├── ai/
+│       │       │   ├── explain/route.ts    # Uses packages/ai
+│       │       │   ├── chat/route.ts
+│       │       │   └── decompose/route.ts
+│       │       ├── math/
+│       │       │   └── ocr/route.ts        # Mathpix (math-specific)
+│       │       ├── sessions/route.ts       # Uses packages/platform
+│       │       └── billing/route.ts        # Uses packages/platform
+│       ├── lib/
+│       │   └── math/                       # Math-specific logic
+│       │       ├── solver/
+│       │       │   ├── engine.ts           # Core solve logic (ported)
+│       │       │   ├── utils.ts            # LaTeX/nerdamer conversions
+│       │       │   ├── multi-var.ts        # 2-3 var linear systems
+│       │       │   └── types.ts
+│       │       ├── ai/
+│       │       │   ├── prompts.ts          # Math-specific AI prompts
+│       │       │   └── verify.ts           # Cross-check AI vs nerdamer
+│       │       └── i18n/                   # Math-specific translations
+│       ├── components/
+│       │   ├── math/                       # Math-specific UI
+│       │   │   ├── solver/                 # Step cards, actions, hints
+│       │   │   ├── tutor/                  # Math chat interface
+│       │   │   └── workspace/              # Math workspace layout
+│       │   └── marketing/                  # Landing page sections
+│       ├── middleware.ts                    # Domain → subject routing
+│       └── public/
+│           ├── icons/
+│           └── manifest.json
+│
+└── tooling/                        # Shared config
+    ├── eslint/
+    ├── tsconfig/
+    └── tailwind/
 ```
+
+**Key structural decisions:**
+- `packages/*` are reusable across products — auth, billing, AI budget, design system
+- `apps/web/lib/math/` contains all math-specific logic — solver, prompts, verification
+- `apps/web/components/math/` contains all math-specific UI — step cards, action buttons
+- `middleware.ts` reads hostname (crackthex.app vs [platform].app) and sets routing context
+- Future products add their own `lib/[subject]/` and `components/[subject]/` directories
 
 ---
 
@@ -364,7 +507,7 @@ Carry the current CrackTheX aesthetic into the Next.js rebuild:
 7. Camera OCR — Mathpix server-side proxy (Starter+)
 8. Auth — OAuth + email/password, optional for free tier
 9. Cloud session sync — for logged-in users
-10. Stripe subscriptions — 4 tiers
+10. Stripe subscriptions — 3 tiers (Free, Pro, Master) — exact tier count to be finalized
 11. Token budget system — usage tracking, limits, dashboard
 12. Landing page — hero, features, pricing
 13. AI math verification — cross-check against nerdamer
@@ -377,7 +520,7 @@ Carry the current CrackTheX aesthetic into the Next.js rebuild:
 4. Full word problem synthesis — connected sub-problem explanation
 5. Progress tracking — solve history, accuracy stats, difficulty visualization
 
-### Phase 3+ (Future)
+### Phase 3+ (Future — Math)
 
 - Notebook / scratch pad (Master)
 - Community marketplace — post problems, AI or humans solve for credit
@@ -385,17 +528,33 @@ Carry the current CrackTheX aesthetic into the Next.js rebuild:
 - Export/share solutions (PDF, link)
 - Mobile native apps (Capacitor)
 
+### Platform Expansion (Parallel Track — After Math MVP)
+
+- **study-helper product**: Curriculum-aligned study preparation (German, English, History)
+  - Artifact-based content system (lessons organized by textbook chapters)
+  - Flash cards, Q&A, mixed practice modes
+  - AI-evaluated answers (partial credit, explanation)
+  - Content creation pipeline (photo → AI extraction → review → publish)
+  - Reuses entire shared platform layer (auth, billing, AI budget, progress)
+- **[platform-name].app domain**: Subject picker landing, unified dashboard
+- **Parent dashboard**: Aggregated view across all subjects (math + languages + history)
+- **Teacher dashboard**: Read-only class aggregate view, team join codes
+- **Community curation**: Usage feedback drives content quality, best materials rise
+
+See `external/product-brief-study-helper-20260222.md` and `external/brainstorming-session-2026-02-15.md` for the full study-helper design context.
+
 ---
 
 ## What This Portfolio Demonstrates
 
-> "I built a complete, production-grade AI product from concept to deployment."
+> "I built a complete, production-grade AI product from concept to deployment — and designed it as a platform that scales to multiple subjects."
 
+- **Architecture**: Turborepo monorepo, shared platform packages, multi-domain single deployment
 - **Frontend**: Next.js App Router, Tailwind, Framer Motion, KaTeX, responsive design
 - **Backend**: Vercel serverless API routes, PostgreSQL, Drizzle ORM
 - **AI**: Anthropic API integration, prompt engineering, token budget management, math verification, multi-model strategy
-- **Payments**: Stripe subscriptions, 4-tier freemium model, webhook handling
+- **Payments**: Stripe subscriptions, 3-tier freemium model, webhook handling
 - **Auth**: OAuth + email/password, optional auth for free tier
-- **Product**: Tiered feature gating, usage dashboards, progressive disclosure
+- **Product**: Tiered feature gating, usage dashboards, progressive disclosure, multi-product platform
 - **Domain**: Mathematical symbolic computation (nerdamer), OCR integration, multi-language
 - **Infrastructure**: Vercel deployment, PWA, offline-first free tier
