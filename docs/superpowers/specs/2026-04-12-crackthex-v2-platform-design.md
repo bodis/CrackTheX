@@ -10,6 +10,8 @@ CrackTheX evolves from a vanilla JS equation solver PWA into a full-stack AI mat
 
 **Core audience**: Hungarian secondary school students (12-18), widening slightly to older students and international users.
 
+**Key product insight**: The buyer is not the user. Parents pay, students use. Marketing, onboarding, and the parent dashboard serve the buyer. The student-facing experience must be frictionless and genuinely useful — even on the free tier — because the free solver is an investment in future paid users (age-based funnel: free at 13 for linear equations, paid at 16 when math gets hard).
+
 ---
 
 ## Broader Platform Context
@@ -102,7 +104,7 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 |-----|-------------|-------|
 | **Solver** | Step-by-step equation solving with action buttons, hints, and contextual AI | MVP |
 | **AI Tutor** | Conversational math tutoring chat interface | MVP |
-| **Practice** | AI-generated exercises with adaptive difficulty and progress tracking | Phase 2 |
+| **Practice** | Equation exercises — deterministic generation (free), AI-powered adaptive (Pro) | MVP (basic), Phase 2 (adaptive) |
 | **Notebook** | Math scratch pad with AI assistance, save/export | Phase 3 |
 
 ### Design Principles (carried from v1)
@@ -113,25 +115,80 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 4. No login wall for the free tier — works immediately
 5. Offline-first for the free deterministic solver
 6. Hungarian first, but multilingual from day one
+7. Free tier must be genuinely good — no nagware, no crippled UX. It's an investment in future paid users
 
 ---
 
 ## Tier Structure
 
+MVP launches with two visible tiers. Signing up is free and unlocks account features (cloud sync, parent dashboard). The pricing page shows only "Free" and "Pro."
+
 | Tier | Price | AI Budget | Key Features |
 |------|-------|-----------|-------------|
-| **Free** | $0, no account | None | Deterministic solver (1-var, 2-3 var linear), localStorage sessions, all themes/languages, keyboard input |
-| **Starter** | $0, account required | ~10k tokens/month | Cloud sync, Camera OCR, word problem decomposition (text → equations, student solves manually), limited "Ask AI why?" |
-| **Pro** | ~$5/month | ~500k tokens/month | Full AI Tutor chat, full word problem solving + synthesis, AI-enhanced solver (quadratic, complex), error analysis, practice mode (Ph2), daily caps |
-| **Master** | ~$20/month | Much higher limits (soft caps) | All Pro features, Socratic mode (Ph2), Notebook (Ph3), priority, all future features. "Unlimited feel" with safety caps in fine print |
+| **Free** (no account) | $0 | None | Deterministic solver (1-var, 2-3 var linear), basic practice mode (deterministic), localStorage sessions, all themes/languages, keyboard input |
+| **Free** (with account) | $0 | None | Everything above + cloud session sync + optional parent dashboard visibility. Not a separate named tier — just what accounts get. |
+| **Pro** | ~$10/month | ~500k tokens/month, daily caps | All AI features: AI Tutor chat, "Ask AI why?", word problem decomposition + solving, Camera OCR, quadratic solving, AI-powered adaptive practice. 7-day free trial. |
+
+**Future tier (post-launch, if needed):**
+
+| Tier | Price | AI Budget | Key Features |
+|------|-------|-----------|-------------|
+| **Master** | ~$20/month | Much higher limits (soft caps) | All Pro features, Socratic mode, Notebook, priority. "Unlimited feel" with safety caps in fine print. Only add this when usage data shows demand for a higher tier. |
 
 **Cost philosophy**:
-- Free tier has zero AI cost — deterministic solver runs client-side
-- Starter has near-zero cost — small token budget, OCR is low-volume
-- Pro and Master have controlled budgets with per-user daily caps
+- Free tier has zero AI cost — deterministic solver and deterministic practice run client-side
+- Pro has controlled budget with per-user daily caps
 - No truly unlimited tier — all tiers have safety caps to prevent abuse
+- 7-day free trial of Pro lowers the barrier for uncertain parents
 
-**BYOK (Bring Your Own Key)**: Deferred. Not in initial build. Architecture should support adding it later as a power-user option.
+**Future monetization options (post-launch, data-driven):**
+- Credit packs for occasional users ("20 AI questions for 500 HUF") — only if usage data shows demand
+- Annual pricing ($80/year vs $10/month) — standard discount for commitment
+- BYOK (Bring Your Own Key) for power users — deferred
+
+---
+
+## Accounts & Onboarding
+
+### Two-Path Onboarding
+
+**Student path** (frictionless):
+1. Land on solver — no signup required
+2. Type or paste an equation → see it solved step by step (aha moment in 15 seconds)
+3. Try practice mode → solve generated equations
+4. If they want to save work or try AI → prompt for account creation
+5. Account is free, unlocks cloud sync
+
+**Parent path** (conversion-focused):
+1. Land on parent-oriented page: "See how your child learns math"
+2. Demo solve + sample parent dashboard mockup: "Your child solved 14 equations this week, accuracy up 15%"
+3. Sign up → create account → add child (or child links their existing account)
+4. 7-day free Pro trial starts automatically
+
+### Account Structure
+
+Accounts are flexible — no rigid parent-child hierarchy:
+
+| Scenario | How it works |
+|----------|-------------|
+| Young student (10-13) | Parent creates child account, sees progress dashboard |
+| Teen (14-16), involved parent | Student has own account, optionally links to parent. Parent sees progress only with student consent |
+| Teen (14-16), hands-off parent | Parent pays via their own account (subscription covers linked child). No progress monitoring required |
+| Older teen (17-18) | Student has own account, subscribes themselves. No parent involved |
+| Student from school | Student creates own account. No parent needed |
+
+**Key principle**: Parent linking is always optional, never required. A student account works fully without any parent connected. Any account can subscribe to Pro independently.
+
+### Parent Dashboard (MVP — Minimal)
+
+For parents who opt in to see their child's progress:
+- Child's name and account status
+- Equations solved this week (count)
+- Practice sessions completed (count)
+- Accuracy trend (simple 4-week line chart)
+- Weekly progress summary email (automated)
+
+This dashboard is the primary tool for keeping parents paying. It answers: "Is my child actually using this, and is it working?"
 
 ---
 
@@ -139,52 +196,63 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 
 ### Solver
 
-| Feature | Free | Starter | Pro | Master | Phase |
-|---------|------|---------|-----|--------|-------|
-| 1-var linear step-by-step (deterministic) | Yes | Yes | Yes | Yes | MVP |
-| 2-3 var linear systems (deterministic) | Yes | Yes | Yes | Yes | MVP |
-| Action buttons (add/sub/mul/div/expand/simplify) | Yes | Yes | Yes | Yes | MVP |
-| Quadratic step-by-step (AI) | — | — | Yes | Yes | MVP |
-| "Ask AI why?" on steps | — | Budget | Yes | Yes | MVP |
-| N-var / non-linear systems (AI) | — | — | Yes | Yes | Phase 2 |
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| 1-var linear step-by-step (deterministic) | Yes | Yes | MVP |
+| 2-3 var linear systems (deterministic) | Yes | Yes | MVP |
+| Action buttons (add/sub/mul/div/expand/simplify) | Yes | Yes | MVP |
+| Quadratic step-by-step (AI) | — | Yes | MVP |
+| "Ask AI why?" on steps | — | Yes | MVP |
+| N-var / non-linear systems (AI) | — | Yes | Phase 2 |
 
 ### AI Tutor
 
-| Feature | Free | Starter | Pro | Master | Phase |
-|---------|------|---------|-----|--------|-------|
-| Full chat tutoring | — | — | Yes | Yes | MVP |
-| Error analysis ("why is this wrong?") | — | — | Yes | Yes | MVP |
-| Socratic mode (guided, not answers) | — | — | — | Yes | Phase 2 |
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| Full chat tutoring | — | Yes | MVP |
+| Error analysis ("why is this wrong?") | — | Yes | MVP |
+| Socratic mode (guided, not answers) | — | Yes | Phase 2 |
 
 ### Word Problem Solver
 
-| Feature | Free | Starter | Pro | Master | Phase |
-|---------|------|---------|-----|--------|-------|
-| Text input → equation decomposition | — | Yes | Yes | Yes | MVP |
-| Student solves decomposed equations manually | — | Yes | Yes | Yes | MVP |
-| Full AI solving + synthesis | — | — | Yes | Yes | MVP |
-| Connected sub-problem explanation | — | — | Yes | Yes | Phase 2 |
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| Text input → equation decomposition | — | Yes | MVP |
+| Full AI solving + synthesis | — | Yes | MVP |
+| Connected sub-problem explanation | — | Yes | Phase 2 |
+
+### Practice Mode
+
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| Deterministic equation generation (3 difficulty levels) | Yes | Yes | MVP |
+| Student solves with action buttons, pass/fail feedback | Yes | Yes | MVP |
+| No hints in practice — solver available for learning | Yes | Yes | MVP |
+| AI-powered adaptive difficulty | — | Yes | Phase 2 |
+| AI-generated word problems for practice | — | Yes | Phase 2 |
+| Detailed AI feedback on student's approach | — | Yes | Phase 2 |
 
 ### Input
 
-| Feature | Free | Starter | Pro | Master | Phase |
-|---------|------|---------|-----|--------|-------|
-| Keyboard + LaTeX + plain text | Yes | Yes | Yes | Yes | MVP |
-| Camera OCR (Mathpix, server-side) | — | Yes | Yes | Yes | MVP |
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| Keyboard + LaTeX + plain text | Yes | Yes | MVP |
+| Camera OCR (Mathpix, server-side) | — | Yes | MVP |
 
 ### Platform
 
-| Feature | Free | Starter | Pro | Master | Phase |
-|---------|------|---------|-----|--------|-------|
-| Local sessions (localStorage) | Yes | Yes | Yes | Yes | MVP |
-| Cloud session sync | — | Yes | Yes | Yes | MVP |
-| Themes (chalkboard, whiteboard, dark) | Yes | Yes | Yes | Yes | MVP |
-| Languages (HU, EN, DE) | Yes | Yes | Yes | Yes | MVP |
-| Usage dashboard & token budget | — | Yes | Yes | Yes | MVP |
-| Practice mode (adaptive exercises) | — | — | Yes | Yes | Phase 2 |
-| Progress tracking & stats | — | — | Yes | Yes | Phase 2 |
-| Notebook / scratch pad | — | — | — | Yes | Phase 3 |
-| Community marketplace | — | — | Yes | Yes | Phase 3+ |
+| Feature | Free | Pro | Phase |
+|---------|------|-----|-------|
+| Local sessions (localStorage) | Yes | Yes | MVP |
+| Cloud session sync (requires account) | Yes | Yes | MVP |
+| Parent dashboard (optional linking) | Yes | Yes | MVP |
+| Themes (chalkboard, whiteboard, dark) | Yes | Yes | MVP |
+| Languages (HU, EN, DE) | Yes | Yes | MVP |
+| Usage dashboard & token budget | — | Yes | MVP |
+| Progress tracking & stats | Yes (basic) | Yes (detailed) | MVP (basic), Phase 2 (detailed) |
+| Weekly progress email to parent | Yes | Yes | MVP |
+| Notebook / scratch pad | — | Yes | Phase 3 |
+| Community marketplace | — | Yes | Phase 3+ |
 
 ---
 
@@ -265,7 +333,7 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 
 4. **AI goes through the backend** — All LLM calls route through `/api/ai/*` where token budgets, rate limits, and tier checks are enforced. Users never talk to an LLM directly.
 
-5. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Becomes a paid-tier feature (Starter+).
+5. **OCR moves server-side** — Mathpix API keys stay on the server. Solves the exposed-keys problem from v1. Becomes a Pro-tier feature.
 
 6. **Auth is optional** — Free tier works without any account (localStorage only, like v1). Signing up unlocks cloud sync as a bonus. Required for paid tiers.
 
@@ -282,15 +350,17 @@ For simple questions ("solve 2x+3=7", "what is a variable?"), the AI Tutor chat 
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth profile, current tier, preferences (theme, language) |
+| `account_links` | Optional parent-child relationships (parent_id, child_id, consent status) |
 | `subscriptions` | Stripe subscription state, tier, billing cycle |
 | `token_usage` | Daily/monthly AI token tracking per user (subject-agnostic) |
-| `progress` | Subject-agnostic progress records (subject, score, timestamp) |
+| `progress` | Subject-agnostic progress records (subject, score, timestamp, session_count) |
 
 **Math-specific tables (apps/web, math context):**
 
 | Table | Purpose |
 |-------|---------|
 | `math_sessions` | Cloud-synced equation sessions (solver state, steps) |
+| `math_practice` | Practice session results (difficulty, equation, pass/fail, timestamp) |
 | `equations` | Solved equations with steps (caching, analytics) |
 | `math_chat_history` | Math AI Tutor conversation threads per user |
 
@@ -407,12 +477,11 @@ study-platform/                     # Monorepo root (Turborepo)
 
 ### Word Problem Pipeline
 
-1. Student inputs natural language description
+1. Student inputs natural language description (Pro feature)
 2. AI identifies variables, constraints, relationships
 3. AI generates connected equations, each displayed as a step card
-4. Starter tier: student solves decomposed equations manually with the deterministic solver
-5. Pro tier: AI solves fully, synthesizes results, explains connections back to original problem
-6. Phase 2: deeper explanation of sub-problem relationships
+4. AI solves fully, synthesizes results, explains connections back to original problem
+5. Phase 2: deeper explanation of sub-problem relationships, connected sub-problems
 
 ### LLM Strategy
 
@@ -473,9 +542,17 @@ Extends the current single-variable engine:
 ### One App, All Tiers
 
 Free and paid users see the same workspace shell. Differences:
-- Locked features show a subtle badge (PRO/MASTER) and upgrade prompt on click
+- Locked features show a subtle PRO badge and upgrade prompt on click
 - AI Tutor tab visible to all, but free users see a preview/demo state
 - Feature flags control enabled state per tier — no separate codebases
+- The free tier must not feel crippled — solver + practice is a genuine product
+
+### Homework Copying Mitigation
+
+CrackTheX can't prevent copying (students have ChatGPT, Photomath, etc.) but the UX encourages learning:
+- **Solver**: Steps revealed one at a time via "Next Step" button. "Show All" exists but is de-emphasized
+- **Practice mode**: No hints, no "Show All." Student uses action buttons to solve, gets pass/fail. If stuck, they switch to the Solver to learn from a similar equation, then return to practice
+- **Natural flow**: Practice → get stuck → learn from Solver → return to Practice. This IS studying.
 
 ### Visual Identity
 
@@ -498,27 +575,39 @@ Carry the current CrackTheX aesthetic into the Next.js rebuild:
 
 ### MVP (First Deploy)
 
+**Workspace & Core:**
 1. Next.js workspace shell — tabs, sidebar, responsive layout, 3 themes, 3 languages
-2. Solver tab — deterministic engine (1-var + 2-3 var linear), step cards, action buttons, hints
+2. Solver tab — deterministic engine (1-var + 2-3 var linear), step cards, action buttons, hints (steps revealed one at a time, "Show All" de-emphasized)
 3. AI Tutor tab — chat interface, math-specialized prompts, conversation history
-4. "Ask AI why?" — contextual AI on solver steps
-5. Word problem decomposition — text → equations (Starter), full AI solve (Pro)
-6. Quadratic solving via AI (Pro+)
-7. Camera OCR — Mathpix server-side proxy (Starter+)
-8. Auth — OAuth + email/password, optional for free tier
-9. Cloud session sync — for logged-in users
-10. Stripe subscriptions — 3 tiers (Free, Pro, Master) — exact tier count to be finalized
-11. Token budget system — usage tracking, limits, dashboard
-12. Landing page — hero, features, pricing
-13. AI math verification — cross-check against nerdamer
+4. Practice tab (basic) — deterministic equation generation at 3 difficulty levels (easy/medium/hard), student solves with action buttons, pass/fail feedback, no hints (free tier, zero AI cost)
+
+**AI Features (Pro):**
+5. "Ask AI why?" — contextual AI on solver steps
+6. Word problem decomposition + full AI solving and synthesis
+7. Quadratic step-by-step solving via AI
+8. Camera OCR — Mathpix server-side proxy
+9. AI math verification — cross-check AI answers against nerdamer
+
+**Platform:**
+10. Auth — OAuth + email/password, optional for free tier. Two-path onboarding (student-first vs parent-first)
+11. Account linking — parent-child optional, flexible (see Account Structure section)
+12. Parent dashboard (minimal) — equations solved, practice sessions, accuracy trend, weekly email
+13. Cloud session sync — for logged-in users
+14. Stripe subscriptions — Free + Pro ($10/month), 7-day free trial
+15. Token budget system — usage tracking, limits, dashboard
+16. Landing page — domain-aware (crackthex.app vs platform), hero, features, pricing
+17. Marketing positioning — word problems as lead feature, "verified answers" differentiator
 
 ### Phase 2 (Incremental Additions)
 
-1. Practice mode tab — AI-generated exercises, adaptive difficulty, progress tracking (Pro+)
-2. Socratic mode — AI guides instead of answers (Master)
-3. N-variable / non-linear systems via AI (Pro+)
+1. AI-powered adaptive practice — difficulty adjusts to student's weak spots, AI-generated word problems for practice, detailed AI feedback on approach (Pro)
+2. Socratic mode — AI guides instead of answers (Pro)
+3. N-variable / non-linear systems via AI (Pro)
 4. Full word problem synthesis — connected sub-problem explanation
-5. Progress tracking — solve history, accuracy stats, difficulty visualization
+5. Detailed progress tracking — solve history, accuracy stats, difficulty curve visualization
+6. Credit packs — alternative to subscription for occasional users (only if usage data supports it)
+7. Master tier — higher limits, additional features (only if usage data shows demand)
+8. Annual pricing option ($80/year vs $10/month)
 
 ### Phase 3+ (Future — Math)
 
@@ -553,8 +642,26 @@ See `external/product-brief-study-helper-20260222.md` and `external/brainstormin
 - **Frontend**: Next.js App Router, Tailwind, Framer Motion, KaTeX, responsive design
 - **Backend**: Vercel serverless API routes, PostgreSQL, Drizzle ORM
 - **AI**: Anthropic API integration, prompt engineering, token budget management, math verification, multi-model strategy
-- **Payments**: Stripe subscriptions, 3-tier freemium model, webhook handling
-- **Auth**: OAuth + email/password, optional auth for free tier
-- **Product**: Tiered feature gating, usage dashboards, progressive disclosure, multi-product platform
-- **Domain**: Mathematical symbolic computation (nerdamer), OCR integration, multi-language
+- **Payments**: Stripe subscriptions, freemium model with free trial, webhook handling
+- **Auth**: OAuth + email/password, optional auth for free tier, flexible parent-child account linking
+- **Product thinking**: Buyer ≠ user analysis, two-path onboarding, parent dashboard for retention, age-based growth funnel, homework-copying UX mitigation
+- **Domain**: Mathematical symbolic computation (nerdamer), OCR integration, word problem decomposition, multi-language
 - **Infrastructure**: Vercel deployment, PWA, offline-first free tier
+
+---
+
+## Appendix: Team Simulation Findings
+
+This spec was refined through a simulated team conversation with 8 stakeholders: primary school teacher (Katalin), high school teacher (Gergő), struggling student (Bence), strong student (Lilla), parent (András), sales/marketing (Réka), UI/UX (Dávid), and mediator (Zsófi).
+
+### Key insights that shaped the spec:
+
+1. **Buyer ≠ user**: Parents pay, students use. Two-path onboarding and parent dashboard were added as MVP features.
+2. **Word problems are the killer feature**: For struggling students (can't extract equations from text) AND advanced students (saves time on practice exams). Made this a lead marketing feature.
+3. **Practice mode → MVP**: Team consensus that basic deterministic practice (free, no AI cost) transforms the product from "calculator" to "tutor." Moved from Phase 2 to MVP.
+4. **Two tiers, not four**: Simplified from Free/Starter/Pro/Master to Free + Pro. Signing up is free and unlocks account features. The pricing page shows two options.
+5. **Free tier must be genuinely good**: No nagware. The free solver + free practice is a real product, not a demo. Investment in the age-based growth funnel.
+6. **Parent linking is optional**: Flexible account structure supports involved parents, hands-off parents, and independent teens equally.
+7. **Homework copying can't be prevented**: But UX encourages learning (one-step reveal, no hints in practice mode, natural practice→solver→practice flow).
+8. **"Verified answers" is a marketing differentiator**: Cross-checking AI against nerdamer isn't just safety — it's positioning against "ChatGPT gives wrong math answers."
+9. **School/teacher features = Phase 2+**: High value but long sales cycle and GDPR complexity. Not MVP.
