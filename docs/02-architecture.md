@@ -14,7 +14,7 @@
 │  └───────────────────────────────────────────────┘   │
 │                                                       │
 │  ┌───────────────────────────────────────────────┐   │
-│  │         Next.js App (apps/web)                  │   │
+│  │         Next.js App (single project)            │   │
 │  │                                                  │   │
 │  │  (marketing)/  - Landing pages (domain-aware)    │   │
 │  │  (auth)/       - Login, register, OAuth          │   │
@@ -24,17 +24,17 @@
 │  └───────────────────────────────────────────────┘   │
 │                                                       │
 │  ┌───────────────────────────────────────────────┐   │
-│  │  API Routes (packages/platform + packages/ai)   │   │
+│  │  API Routes (lib/platform + lib/math)           │   │
 │  │                                                  │   │
 │  │  /api/auth/*     - Auth (shared)                 │   │
-│  │  /api/ai/*       - LLM proxy + budget (shared)   │   │
+│  │  /api/ai/*       - AI Gateway proxy (shared)     │   │
 │  │  /api/sessions/* - CRUD + sync (shared)          │   │
 │  │  /api/billing/*  - Stripe webhooks (shared)      │   │
 │  │  /api/math/ocr/* - Mathpix proxy (math-specific) │   │
 │  └───────────────────────────────────────────────┘   │
 │                                                       │
 │  ┌───────────────────────────────────────────────┐   │
-│  │         PostgreSQL (Vercel Postgres)             │   │
+│  │         Neon Postgres (direct)                   │   │
 │  │                                                  │   │
 │  │  Shared: users, subscriptions, token_usage,      │   │
 │  │          progress, account_links                  │   │
@@ -45,44 +45,61 @@
 └─────────────────────────────────────────────────────┘
           │                    │
           ▼                    ▼
-   Anthropic API          Mathpix API
-   (AI features)          (OCR)
+   Vercel AI Gateway      Mathpix API
+   → Anthropic API        (OCR)
+   (AI features)
 ```
 
 ## Tech Stack
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| Monorepo | Turborepo | Shared packages + apps |
 | Framework | Next.js 14+ (App Router) | SSR for landing/SEO, client components for workspace |
 | Styling | Tailwind CSS | Theming with CSS custom properties |
 | Component library | shadcn/ui (adapted) | Base components customized to design system |
 | Math rendering | KaTeX | Carried from v1, client-side |
 | Deterministic solver | nerdamer (ported) | Client-side, zero backend cost |
-| Auth | Vercel Auth (Auth.js) | OAuth (Google, GitHub) + email/password |
-| Database | PostgreSQL (Vercel Postgres) | Sessions, users, subscriptions, token usage |
+| Auth | Auth.js (NextAuth.js) | OAuth (Google, GitHub) + email/password |
+| Database | Neon Postgres (direct) | Connection pooling, branching for environments |
 | ORM | Drizzle | Type-safe, lightweight |
 | Payments | Stripe | Subscriptions, webhooks, customer portal |
-| AI | Anthropic API (Claude) | Math reasoning, multi-language |
+| AI | Vercel AI Gateway → Anthropic (Claude) | Haiku for explanations, Sonnet for tutoring |
 | OCR | Mathpix API (server-side) | LaTeX from images, keys stay on server |
 | Animations | Framer Motion | React-idiomatic replacement for GSAP |
 | Image cropping | react-cropper (Cropper.js v1.6.2) | Thin React wrapper |
+| Image storage | Vercel Blob | If needed for user uploads |
 
 ## Key Architectural Decisions
 
-1. **Monorepo with shared platform layer** — Turborepo separates shared concerns (auth, billing, AI, UI) into reusable packages. Enables building study-helper later without rebuilding infrastructure.
-2. **Two domains, one deployment** — `crackthex.app` + future platform domain. Middleware routes based on hostname.
-3. **Solver runs client-side** — nerdamer ported as a client-side utility. Zero backend cost, instant, works offline.
-4. **AI goes through the backend** — `/api/ai/*` enforces token budgets, rate limits, tier checks.
-5. **OCR moves server-side** — Mathpix keys on server. Available to registered users (free) as registration hook.
-6. **Auth is optional** — Free tier works without account (localStorage). Signup unlocks cloud sync + OCR.
-7. **Unified app for all tiers** — Feature flags control what's visible per tier.
-8. **localStorage persists for free** — Cloud sync supplements, doesn't replace.
-9. **Subject-agnostic shared tables** — New products add their own tables without touching shared schema.
+1. **Single Next.js app with `lib/` domain split** — No Turborepo. Shared concerns live in `lib/platform/`, math-specific code in `lib/math/`. Clean boundary enables future monorepo extraction when study-helper starts. Dependency rule: platform never imports math.
+2. **Vercel AI Gateway (not direct Anthropic SDK)** — Proven in Lipoti project. Single budget across models (Haiku/Sonnet), logging, caching, rate limiting handled by gateway. Our code is thin: prompts, response parsing, usage logging.
+3. **Neon Postgres direct (not Vercel Postgres wrapper)** — Already used in Lipoti. Connection pooling, branching for environment isolation. Drizzle ORM.
+4. **Environment isolation via Neon branching** — Separate prod DB, shared preview branch, test branch, dev branch. Env config via Vercel dashboard + `.env.local` for dev. Mirrors Lipoti setup.
+5. **Two domains, one deployment** — `crackthex.app` + future platform domain. Middleware routes based on hostname.
+6. **Solver runs client-side** — nerdamer ported as a client-side utility. Zero backend cost, instant, works offline.
+7. **AI goes through the backend** — `/api/ai/*` proxies to AI Gateway. Tier checks in our code, budget enforcement at gateway level.
+8. **OCR moves server-side** — Mathpix keys on server. Available to registered users (free) as registration hook.
+9. **Auth is optional** — Free tier works without account (localStorage). Signup unlocks cloud sync + OCR.
+10. **Unified app for all tiers** — Feature flags control what's visible per tier.
+11. **localStorage persists for free** — Cloud sync supplements, doesn't replace.
+12. **Subject-agnostic shared tables** — New products add their own tables without touching shared schema.
+
+## Environment Isolation
+
+| Environment | Database | Vercel deployment | Purpose |
+|-------------|----------|-------------------|---------|
+| Production | Neon `main` branch (separate) | Production deployment | Live users |
+| Preview | Neon `preview` branch (shared across PRs) | Preview deployments | PR review, demo |
+| Test | Neon `test` branch (separate) | Dedicated test deployment | Testing |
+| Local dev | Neon `dev` branch | `next dev` | Development |
+
+- `.env.local` for local dev (database URL, API keys, gateway config)
+- All other environments: Vercel dashboard env vars
+- `.env.example` checked into git with placeholder keys
 
 ## Database Schema
 
-**Shared tables (packages/platform):**
+**Shared tables (`lib/platform/db/`):**
 
 | Table | Purpose |
 |-------|---------|
@@ -112,47 +129,59 @@
 ## Project Structure
 
 ```
-study-platform/                     # Monorepo root (Turborepo)
-├── packages/
-│   ├── platform/                   # Shared platform layer
-│   │   ├── auth/                   # Auth utilities, middleware, session
+crackthex/                          # Single Next.js project
+├── app/
+│   ├── (marketing)/                # Landing pages, pricing, privacy
+│   ├── (auth)/                     # Login, register, OAuth
+│   ├── (workspace)/                # Workspace shell
+│   │   ├── layout.tsx              # Tabs, sidebar, nav
+│   │   └── math/                   # CrackTheX workspace
+│   │       ├── solver/
+│   │       ├── tutor/
+│   │       └── practice/
+│   ├── api/
+│   │   ├── ai/                     # AI Gateway proxy routes
+│   │   ├── auth/                   # Auth.js handlers
+│   │   ├── math/ocr/               # Mathpix proxy
+│   │   ├── sessions/               # Session CRUD
+│   │   └── billing/                # Stripe webhooks
+│   └── middleware.ts               # Domain → subject routing
+│
+├── lib/
+│   ├── platform/                   # Shared, math-agnostic
+│   │   ├── auth/                   # Auth utilities, session helpers
 │   │   ├── billing/                # Stripe integration, tier checks
-│   │   ├── db/
-│   │   │   ├── schema.ts           # Drizzle schema (shared tables)
-│   │   │   └── queries.ts          # Common queries
+│   │   ├── db/                     # Drizzle client, shared schema & queries
+│   │   ├── ai/                     # Prompt templates, token usage logging, tier checks
 │   │   ├── progress/               # Subject-agnostic progress tracking
 │   │   └── sessions/               # Cloud session sync (generic JSON state)
-│   ├── ai/                         # Shared AI layer
-│   │   ├── proxy.ts                # LLM provider abstraction
-│   │   ├── budget.ts               # Token tracking & enforcement
-│   │   └── rate-limit.ts           # Per-user rate limiting
-│   └── ui/                         # Shared design system
-│       ├── components/             # Glass cards, buttons, inputs, layout
-│       ├── themes/                 # Chalkboard, Light, Dark
-│       └── i18n/                   # Translation infrastructure
+│   └── math/                       # CrackTheX-specific
+│       ├── solver/                 # Deterministic solver engine (ported from v1)
+│       ├── db/                     # Math schema & queries
+│       ├── sessions/               # Math session logic
+│       ├── practice/               # Equation generation, difficulty templates
+│       └── tutor/                  # AI tutor prompts, chat history logic
 │
-├── apps/
-│   └── web/                        # Next.js app (single deployment)
-│       ├── app/
-│       │   ├── (marketing)/        # Landing pages (domain-aware)
-│       │   ├── (auth)/             # Login, register, OAuth
-│       │   ├── (workspace)/        # Workspace shell
-│       │   │   ├── layout.tsx      # Tabs, sidebar, nav
-│       │   │   └── math/           # CrackTheX math workspace
-│       │   │       ├── solver/
-│       │   │       ├── tutor/
-│       │   │       └── practice/
-│       │   └── api/
-│       │       ├── ai/             # explain, chat, decompose
-│       │       ├── math/ocr/       # Mathpix proxy
-│       │       ├── sessions/
-│       │       └── billing/
-│       ├── lib/math/               # Solver engine, AI prompts, verification
-│       ├── components/math/        # Step cards, action buttons, workspace
-│       └── middleware.ts           # Domain → subject routing
+├── components/
+│   ├── ui/                         # Design system — glass cards, buttons, inputs
+│   ├── layout/                     # Shell, sidebar, tabs, nav
+│   └── math/                       # Step cards, action buttons, workspace
 │
-└── tooling/                        # eslint, tsconfig, tailwind
+├── public/                         # Static assets
+├── drizzle/                        # Migration files
+└── tooling/                        # ESLint, Tailwind config
 ```
+
+### Dependency Rules
+
+| From | To | Allowed? |
+|------|----|----------|
+| `lib/math/` | `lib/platform/` | Yes — math depends on platform |
+| `lib/platform/` | `lib/math/` | **No** — platform never imports math |
+| `components/math/` | `lib/math/` | Yes |
+| `components/ui/` | `lib/platform/` | Yes — only for types/config |
+
+**Future monorepo extraction:** When study-helper starts, `lib/platform/` → `packages/platform/`, `components/ui/` → `packages/ui/`. Import paths change, code doesn't. Mechanical refactor if the dependency rule is maintained.
 
 ## AI Integration
 
@@ -180,26 +209,28 @@ study-platform/                     # Monorepo root (Turborepo)
 
 ### LLM Strategy
 
-- Start with Claude (Anthropic API)
-- Provider-agnostic backend abstraction
+- Vercel AI Gateway → Anthropic (Claude)
+- Single budget across all models, managed in Vercel dashboard
 - Haiku for "Ask AI why?" (cheap), Sonnet for tutoring/word problems (quality)
-- Architecture supports adding providers later
+- Gateway handles: budget enforcement, logging, caching, rate limiting, model switching
+- Our code handles: prompt construction, response parsing, token usage logging to DB (for user dashboard), tier checks
 
 ### Token Budget Enforcement
 
 ```
-Request → /api/ai/* → Verify auth → Check tier
-→ Check monthly usage → Check daily cap
-→ Over budget: upgrade prompt (graceful degradation)
-→ Under budget: call LLM → log tokens → return response
+Request → /api/ai/* → Verify auth → Check tier (our code)
+→ Proxy to Vercel AI Gateway
+→ Gateway enforces budget + rate limits
+→ Over budget: gateway rejects → our code shows upgrade prompt
+→ Under budget: gateway calls LLM → our code logs tokens to DB → return response
 ```
 
 ### Cost Optimization
 
-- Prompt caching (common explanations cached by rule + equation type)
-- Model tiering (cheap for simple, expensive for complex)
+- Vercel AI Gateway caching (built-in)
+- Model tiering (Haiku for simple, Sonnet for complex)
 - Pre-generation (practice exercises in batches)
-- Rate limiting (per-user daily caps)
+- Gateway-level rate limiting + per-user daily caps in DB
 
 ### Math Accuracy Safeguard
 

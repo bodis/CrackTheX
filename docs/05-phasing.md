@@ -155,10 +155,10 @@ See `external/product-brief-study-helper-20260222.md` for full study-helper desi
 
 > "I built a complete, production-grade AI product from concept to deployment — and designed it as a platform that scales to multiple subjects."
 
-- **Architecture**: Turborepo monorepo, shared platform packages, multi-domain deployment
+- **Architecture**: Single Next.js app with domain-split `lib/` layer, multi-domain deployment, monorepo-ready boundaries
 - **Frontend**: Next.js App Router, Tailwind, Framer Motion, KaTeX
-- **Backend**: Vercel serverless, PostgreSQL, Drizzle ORM
-- **AI**: Anthropic API, prompt engineering, token budgets, math verification
+- **Backend**: Vercel serverless, Neon Postgres, Drizzle ORM
+- **AI**: Vercel AI Gateway → Anthropic API, prompt engineering, token budgets, math verification
 - **Payments**: Stripe subscriptions, freemium model, free trial
 - **Auth**: OAuth + email/password, optional, flexible parent-child linking
 - **Product**: Buyer ≠ user, two-path onboarding, parent dashboard, age-based funnel

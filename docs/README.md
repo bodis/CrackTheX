@@ -4,8 +4,8 @@ Full design documentation for CrackTheX, an AI-powered math tutoring platform fo
 
 ## Quick Summary
 
-- **Stack**: Next.js, Vercel, PostgreSQL, Drizzle, Stripe, Anthropic API
-- **Architecture**: Turborepo monorepo with shared platform layer for future multi-product expansion
+- **Stack**: Next.js, Vercel, Neon Postgres, Drizzle, Stripe, Vercel AI Gateway → Anthropic API
+- **Architecture**: Single Next.js app with `lib/platform/` + `lib/math/` domain split (monorepo-extractable when study-helper starts)
 - **Tiers**: Free (solver + practice, no account) → Free with account (+ camera OCR, cloud sync) → Pro ~$10/month (AI features)
 - **Audience**: Hungarian students 12-18, parents as buyers
 - **Approach**: Math Workspace with AI Co-Pilot — Solver, Practice, AI Tutor tabs
